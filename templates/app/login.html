@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static "app/css/bootstrap.min.css"%}"/>
+<script type="text/javascript" src="{% static "app/js/bootstrap.min.js" %}"></script>
+
+<html>
+    <body>
+    <div class ="col-md-offset-3 col-md-5">
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+        <div class = "panel panel-primary">
+            <div class="panel-heading">Login</div>
+            <div class="panel-body">
+                <form action="{% url 'app:login_action' %}" method="post">
+                    {% csrf_token %}
+                    <div class="input-group col-md-10">
+                        <input type="text" class="form-control" name="username" id="username" value="" placeholder="Jonh" /><br/>
+                        <input type="password" name="password" class="form-control" id="password" value="" placeholder="Password" />
+                    </div>
+                    <br/>
+                    <input type="submit" class="btn btn-success" value="Login" />
+                </form>
+            </div>
+            </div>
+    </div>
+    </body>
+</html>

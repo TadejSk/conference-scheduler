@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static "app/css/bootstrap.min.css"%}"/>
+<script type="text/javascript" src="{% static "app/js/bootstrap.min.js" %}"></script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Diploma</title>
+</head>
+<body>
+<div class="navbar navbar-default">
+     <div class="container-fluid">
+     <div class="navbar-header">
+         <div class="navbar-brand">
+             Test
+         </div>
+     </div>
+         <ul class="nav navbar-nav navbar-right">
+         <li><a class="navbar-brand" href="/app/logout_view">
+              Logout
+         </a></li>
+         </ul>
+     </div>
+</div>
+{% block content %}
+
+{% endblock content %}
+</body>
+</html>

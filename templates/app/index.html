@@ -1,0 +1,35 @@
+{% extends "app/base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row-fluid">
+        <div class="col-md-2">
+            <div class="panel panel-default">
+                <div class="panel-heading">Podatki</div>
+                <div class="panel-body">
+                    {{ request.session.accepted_path }}
+                    {{ request.session.assignments_path }}
+                    <form action="{% url 'app:import_data' %}" method="post">
+                        {% csrf_token %}
+                        <div class="input-group col-md-10">
+                            <input type="text" class="form-control" name="file_path" id="file_path" value=""
+                                   placeholder="c:/datoteke/" /><br/>
+                        </div>
+                        <br/>
+                        <div class="input-group col-md-10">
+                            <input type="submit" class="btn btn-default" value="Uvozi podatke" />
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-10">
+            <div class="panel panel-default">
+                <div class="panel-heading">Urnik</div>
+                <div class="panel-body">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
