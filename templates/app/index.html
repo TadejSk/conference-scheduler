@@ -6,8 +6,8 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Podatki</div>
                 <div class="panel-body">
-                    {{ request.session.accepted_path }}
-                    {{ request.session.assignments_path }}
+                    Imported papers: {{ num_papers }}
+                    Imported authors: {{ num_authors }}
                     <form action="{% url 'app:import_data' %}" method="post">
                         {% csrf_token %}
                         <div class="input-group col-md-10">
