@@ -15,4 +15,11 @@ class Author(models.Model):
     def __str__(self):
         return self.name+" ("+self.user.username+")"
 
+class ScheduleSettings(models.Model):
+    settings_string = models.CharField(max_length=100000)
+    slot_length = models.IntegerField()
+    num_days = models.IntegerField()
+    user = models.ForeignKey(User)
+    def __str__(self):
+        return self.settings_string
 
