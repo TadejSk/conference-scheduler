@@ -48,6 +48,18 @@ class schedule_settings_class(object):
         for i in range(num_slots):
             parallel_slots.append(slot_length)
         day_schedule.append(parallel_slots)
+        return
+
+    def change_slot_time(self, day:int, row:int, col:int, new_len:int):
+        day_schedule = self.settings[day]
+        row_schedule = day_schedule[row]
+        if type(row_schedule) == int:
+            day_schedule[row] = new_len
+        else:
+            row_schedule[col] = new_len
+        print(self.settings)
+        return
+
     def __str__(self):
         return str(self.settings)
 

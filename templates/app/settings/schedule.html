@@ -43,11 +43,33 @@
                     )
                 </div>
                 <div class="panel-body">
+                <table class="table">
                     {% for row in settings_list %}
+                        <div class="row">
                         {% for col in row|wrap_int_in_list %}
-                            aaaaa
-                        {% endfor %}<br/>
+                            <div class="col-md-{{ row|allign_schedule }}">
+                                <div class="well">
+                                    Slot {{ forloop.parentloop.counter }}<br/>
+                                    <form class="form-inline" action="{% url 'app:schedule_change_slot_length' %}" method="post">
+                                        {% csrf_token %}
+                                        <input class="hidden", id="row", name="row", value="{{ forloop.parentloop.counter0 }}"/>
+                                        <input class="hidden", id="col", name="col", value="{{ forloop.counter0 }}"/>
+                                        <input class="hidden", value={{ day }} id="day", name="day"/>
+                                        <div><label for="len">Length:</label></div>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" id="len" name="len" class="form-control"
+                                                   placeholder="" value="{{ col }}">
+                                            <span class="input-group-btn">
+                                                <button type="submit" class="btn btn-primary">Change</button>
+                                            </span>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
                     {% endfor %}
+                </table>
                 </div>
                 <div class="panel-footer">
                     <div class="panel-body">

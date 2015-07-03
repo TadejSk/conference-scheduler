@@ -15,3 +15,20 @@ def wrap_int_in_list(value):
     if type(value) is list:
         return value
     return None
+
+@register.filter()
+def allign_schedule(value):
+    l = wrap_int_in_list(value)
+    return int(12/len(l))
+
+@register.filter()
+def mul(value, arg):
+    return value*arg
+
+@register.filter()
+def div(value, arg):
+    return int(value/arg)
+
+@register.filter()
+def get_element_at(value, arg):
+    return value[arg]
