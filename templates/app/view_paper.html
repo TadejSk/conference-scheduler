@@ -3,18 +3,23 @@
 {% bootstrap_css %}
 {% bootstrap_javascript %}
 {% block content %}
-
-    {{ formset.management_form }}
-    {% for form in formset %}
-        <form method="post" action="">
-    {% csrf_token %}
-        {% bootstrap_form form %}
-        {% buttons %}
-            <button type="submit" class="btn btn-primary">
-            {% bootstrap_icon "star" %} Submit
-            </button>
-        {% endbuttons %}
-        </form>
-    {% endfor %}
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    Edit paper
+                </div>
+                <div class="panel-body">
+                    <form method="post" action="{% url 'app:update_paper' %}">
+                        {% csrf_token %}
+                        {% bootstrap_formset formset %}
+                        {% buttons %}
+                            <button type="submit" class="btn btn-primary">
+                               Save
+                            </button>
+                        {% endbuttons %}
+                    </form>
+                </div>
+            </div>
+        </div>
 
 {% endblock %}

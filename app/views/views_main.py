@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.shortcuts import render, redirect
 from app.classes import *
@@ -12,16 +13,26 @@ def index(request):
     num_authors = Author.objects.filter(user=request.user).count()
     num_papers = Paper.objects.filter(user=request.user).count()
     # Get the data necessary to display the schedule
-    settings = ScheduleSettings.objects.get(user=request.user)
+    try:
+        settings = ScheduleSettings.objects.get(user=request.user)
+    except ObjectDoesNotExist:
+        s = ScheduleSettings()
+        s.user = request.user
+        s.num_days = 1
+        s.slot_length = 60
+        s.settings_string = "[[]]"
+        s.save()
+        settings = s
     num_days = None
     if settings is not None:
         num_days = settings.num_days
     day = int(request.GET.get('day',0))
     if day >= num_days and num_days >=1:
         raise Http404('The selected day is too high')
+    settings_str = settings.settings_string
     settings_list = ast.literal_eval(settings.settings_string)[int(request.GET.get('day',0))]
     # Create a list of all the papers that the user has imported/created
-    papers = Paper.objects.filter(user=request.user)
+    papers = Paper.objects.filter(user=request.user).order_by('title')
     paper_titles = []
     paper_ids = []
     for paper in papers:

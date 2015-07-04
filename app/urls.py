@@ -15,5 +15,6 @@ urlpatterns = [
     url(r'^settings/schedule/change_slot_length/', views.schedule_change_slot_time, name='schedule_change_slot_length'),
     url(r'^settings/schedule/', views.schedule_settings, name='schedule_settings'),
     url(r'^papers/view/', views.view_paper, name='view_papers'),
+    url(r'^papers/update/', views.update_paper, name='update_paper'),
 
 ]

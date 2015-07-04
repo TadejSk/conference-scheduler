@@ -11,9 +11,12 @@
                     Imported authors: {{ num_authors }}
                     <ul class="list-group">
                         {% for i in num_papers|custom_range %}
-                            <li class="list-group-item">{{ paper_titles|get_element_at:i }}</li>
+                            <a href="/app/papers/view/?id={{ paper_ids|get_element_at:i }}">
+                                <li class="list-group-item">{{ paper_titles|get_element_at:i }}</li>
+                            </a>
                         {% endfor %}
                     </ul>
+                    <a href="/app/papers/view/" class="btn btn-default">Add paper</a>
                     <form action="{% url 'app:import_data' %}" method="post">
                         {% csrf_token %}
                         <div class="input-group col-md-10">
