@@ -1,0 +1,11 @@
+.scrollable {
+  max-height:80vh;
+  overflow-y:scroll;
+  width:100%;
+}
+
+.fixed-side-panel {
+    position: fixed;
+
+    width:15%;
+}

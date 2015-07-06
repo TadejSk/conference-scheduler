@@ -23,6 +23,7 @@ Example:
 """
 class schedule_settings_class(object):
     settings=[]
+
     def __init__(self, settings_string, num_days:int):
         if settings_string == "":
             self.settings = []

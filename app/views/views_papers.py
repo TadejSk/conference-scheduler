@@ -1,8 +1,10 @@
 from django.forms import modelformset_factory
 from django.http import Http404
 from django.shortcuts import render, redirect
-from app.classes import PaperForm
-from app.models import Paper
+from django.views.decorators.csrf import csrf_exempt
+from app.models import Paper, ScheduleSettings
+from ..classes import schedule_manager_class
+
 
 __author__ = 'Tadej'
 
@@ -27,4 +29,13 @@ def update_paper(request):
             obj.save()
         return redirect('/app/index/')
     else:
-        return Http404
+        raise Http404
+
+@csrf_exempt
+def add_paper_to_schedule(request):
+    set = schedule_manager_class()
+    settings=ScheduleSettings.objects.get(user=request.user)
+    set.create_empty_list(settings.settings_string)
+    print(set.papers)
+
+    return redirect('/app/index/')

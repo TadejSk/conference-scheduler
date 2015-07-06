@@ -1,17 +1,19 @@
 {% extends "app/base.html" %}
 {% block content %}
 {% load filters %}
+{% load staticfiles %}
+<script src="{% static "app/js/index.js" %}"></script>
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="col-md-2">
-            <div class="panel panel-default">
+            <div class="panel panel-default fixed-side-panel">
                 <div class="panel-heading">Papers</div>
-                <div class="panel-body">
+                <div class="panel-body scrollable">
                     Imported papers: {{ num_papers }}
                     Imported authors: {{ num_authors }}
                     <ul class="list-group">
                         {% for i in num_papers|custom_range %}
-                            <a href="/app/papers/view/?id={{ paper_ids|get_element_at:i }}">
+                            <a href="/app/papers/view/?id={{ paper_ids|get_element_at:i }}" name="paper">
                                 <li class="list-group-item">{{ paper_titles|get_element_at:i }}</li>
                             </a>
                         {% endfor %}
@@ -32,7 +34,7 @@
             </div>
         </div>
         <div class="col-md-10">
-            <div class="panel panel-default">
+            <div class="panel panel-default" id="maindiv">
                 <div class="panel-heading">
                     Schedule (
                     {% for i in num_days|custom_range %}
@@ -53,9 +55,22 @@
                         <div class="row">
                         {% for col in row|wrap_int_in_list %}
                             <div class="col-md-{{ row|allign_schedule }}">
-                                <div class="well">
+                                <div class="well" name="slot">
                                     Slot {{ forloop.parentloop.counter }}<br/>
-                                    Length {{ col }} <br/>
+                                    Length: {{ col }}min <br/>
+                                    Free time: {{ col }}min <br/>
+                                    <form action="{% url 'app:schedule_add_parallel_slots' %}" method="post" class="form-inline">
+                                         {% csrf_token %}
+                                        <input class="hidden", value="{{ forloop.counter0 }}" id="col", name="col"/>
+                                        <input class="hidden", value="{{ forloop.parentloop.counter0 }}" id="row", name="row"/>
+                                        <div class="input-group">
+                                            <span class="input-group-btn">
+                                                <button type="submit" class="btn btn-primary">Add pararel slots</button>
+                                            </span>
+                                            <input type="text" id="num_slots" name="num_slots" class="form-control"
+                                                   placeholder="Number of slots">
+                                        </div>
+                                    </form>
                                     {% with num_lines=col|div:10 %}
                                         {% for b in num_lines|custom_range %}
                                             <br/>
@@ -68,7 +83,6 @@
                     {% endfor %}
                 </table>
                 </div>
-            </div>
             </div>
         </div>
     </div>
