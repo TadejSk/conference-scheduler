@@ -1,3 +1,4 @@
+import ast
 from django.forms import modelformset_factory
 from django.http import Http404
 from django.shortcuts import render, redirect
@@ -35,7 +36,30 @@ def update_paper(request):
 def add_paper_to_schedule(request):
     set = schedule_manager_class()
     settings=ScheduleSettings.objects.get(user=request.user)
-    set.create_empty_list(settings.settings_string)
+    if settings.schedule_string == "[]":
+        set.create_empty_list(settings.settings_string)
+    else:
+        set.import_paper_schedule(settings.schedule_string)
+    row = request.POST.get('row')
+    col = request.POST.get('col')
+    id = request.POST.get('id')
+    day = request.POST.get('day')
+    set.assign_paper(int(id), int(day), int(row), int(col))
+    settings.schedule_string = str(set.papers)
+    settings.save()
     print(set.papers)
-
     return redirect('/app/index/')
+
+@csrf_exempt
+def remove_paper_from_schedule(request):
+    set = schedule_manager_class()
+    settings=ScheduleSettings.objects.get(user=request.user)
+    if settings.schedule_string == "[]":
+        set.create_empty_list(settings.settings_string)
+    else:
+        set.import_paper_schedule(settings.schedule_string)
+    id = int(request.POST.get('id'))
+    set.remove_paper(id)
+    settings.schedule_string = str(set.papers)
+    settings.save()
+    return redirect('/app/index')

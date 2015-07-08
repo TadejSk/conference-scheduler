@@ -23,6 +23,7 @@ Example:
 
 class schedule_manager_class(object):
     papers=[]
+
     def __init__(self):
         return
 
@@ -36,6 +37,7 @@ class schedule_manager_class(object):
             self.papers = ast.literal_eval(paper_string)
         return
     """
+
     def create_empty_list(self, settings_string):
         list = []
         settings = ast.literal_eval(settings_string)
@@ -44,10 +46,8 @@ class schedule_manager_class(object):
             day_list = []
             for slots in day_string:
                 if type(slots) == int:
-                    print("aaa")
-                    day_list.append([])
+                    day_list.append([[]])
                 else:
-                    print("bbb")
                     slot_list = []
                     for slot in slots:
                         slot_list.append([])
@@ -56,29 +56,35 @@ class schedule_manager_class(object):
         self.papers = list
         return
 
+    def import_paper_schedule(self, schedule_string:str):
+        self.papers = ast.literal_eval(schedule_string)
 
-    def add_slot_to_day(self, day:int, slot_length:int):
-        day_schedule = self.settings[day]
-        day_schedule.append(slot_length)
+    def assign_paper(self, paper:int, day:int, slot_row:int, slot_col:int):
+        self.remove_paper(paper)
+        print(day, slot_row, slot_col)
+        day = self.papers[day]
+        row = day[slot_row]
+        col = row[slot_col]
+        col.append(paper)
         return
 
-    def add_parallel_slots_to_day(self, day:int, slot_length:int, num_slots:int):
-        day_schedule = self.settings[day]
-        parallel_slots = []
-        for i in range(num_slots):
-            parallel_slots.append(slot_length)
-        day_schedule.append(parallel_slots)
-        return
-
-    def change_slot_time(self, day:int, row:int, col:int, new_len:int):
-        day_schedule = self.settings[day]
-        row_schedule = day_schedule[row]
-        if type(row_schedule) == int:
-            day_schedule[row] = new_len
-        else:
-            row_schedule[col] = new_len
-        print(self.settings)
-        return
+    def remove_paper(self, paper:int):
+        for di,day_list in enumerate(self.papers):
+            print("day_list:" + str(day_list))
+            for ri,row in enumerate(day_list):
+                print("row:" + str(row))
+                for ci,col in enumerate(row):
+                    print("col:" + str(col))
+                    for i in range(0,len(col)):
+                        print(col[i],paper, col[i]==paper)
+                        if col[i] == paper:
+                            col = col[0:i] + col[i+1:len(col)]
+                            print(col)
+                            self.papers[di][ri][ci] = col
+                            print(self.papers)
+                            return True
+        print("b")
+        return False
 
     def __str__(self):
         return str(self.settings)

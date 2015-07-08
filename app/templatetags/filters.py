@@ -32,3 +32,11 @@ def div(value, arg):
 @register.filter()
 def get_element_at(value, arg):
     return value[arg]
+
+@register.filter()
+def multiarg_get_element_at(value, arg):
+    args = [int(a.split(",").strip() for a in arg)]
+    element = value
+    for arg in args():
+        element = value[arg]
+    return e

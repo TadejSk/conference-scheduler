@@ -2,11 +2,12 @@
 {% block content %}
 {% load filters %}
 {% load staticfiles %}
+{% load tags %}
 <script src="{% static "app/js/index.js" %}"></script>
 <div class="container-fluid">
     <div class="row-fluid">
         <div class="col-md-2">
-            <div class="panel panel-default fixed-side-panel">
+            <div class="panel panel-default fixed-side-panel" id="paper-panel">
                 <div class="panel-heading">Papers</div>
                 <div class="panel-body scrollable">
                     Imported papers: {{ num_papers }}
@@ -49,7 +50,7 @@
                     {% endfor %}
                     )
                 </div>
-                <div class="panel-body">
+                <div class="panel-body" id="schedule_div">
                 <table class="table">
                     {% for row in settings_list %}
                         <div class="row">
@@ -59,6 +60,18 @@
                                     Slot {{ forloop.parentloop.counter }}<br/>
                                     Length: {{ col }}min <br/>
                                     Free time: {{ col }}min <br/>
+                                    <!-- Display all the papers in the slot -->
+                                    {%  get_paper schedule day forloop.parentloop.counter0 forloop.counter0 as papers %}
+                                    {% for paper in papers %}
+                                    <a href="/app/papers/view/?id={{paper}}" name="paper">
+                                        <div class="well">
+                                            {{ paper_dict|get_element_at:paper}}
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                    <input class="hidden", value="{{ forloop.counter0 }}" id="col", name="col"/>
+                                    <input class="hidden", value="{{ forloop.parentloop.counter0 }}" id="row", name="row"/>
+                                    <!--
                                     <form action="{% url 'app:schedule_add_parallel_slots' %}" method="post" class="form-inline">
                                          {% csrf_token %}
                                         <input class="hidden", value="{{ forloop.counter0 }}" id="col", name="col"/>
@@ -71,7 +84,8 @@
                                                    placeholder="Number of slots">
                                         </div>
                                     </form>
-                                    {% with num_lines=col|div:10 %}
+                                    -->
+                                    {% with num_lines=col|div:20 %}
                                         {% for b in num_lines|custom_range %}
                                             <br/>
                                         {% endfor %}

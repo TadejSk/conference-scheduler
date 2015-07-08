@@ -17,5 +17,6 @@ urlpatterns = [
     url(r'^papers/view/', views.view_paper, name='view_papers'),
     url(r'^papers/update/', views.update_paper, name='update_paper'),
     url(r'^papers/add_to_schedule/', views.add_paper_to_schedule, name='add_paper_to_schedule'),
+    url(r'^papers/remove_from_schedule/', views.remove_paper_from_schedule, name='remove_paper_from_schedule'),
 
 ]
