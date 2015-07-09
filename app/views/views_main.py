@@ -36,15 +36,17 @@ def index(request):
     papers = Paper.objects.filter(user=request.user).order_by('title')
     paper_titles = []
     paper_ids = []
+    paper_lengths = []
     for paper in papers:
         paper_titles.append(paper.title)
         paper_ids.append(paper.pk)
+        paper_lengths.append(paper.length)
     paper_dict = dict(zip(paper_ids, paper_titles))
     schedule = ast.literal_eval(settings.schedule_string)
     return render(request, 'app/index.html', {'num_authors':num_authors, 'num_papers':num_papers, 'num_days':num_days,
                                               'settings_list':settings_list,'paper_titles':paper_titles,
                                               'paper_ids':paper_ids, 'paper_dict':paper_dict, 'schedule':schedule,
-                                              'day':day})
+                                              'day':day, 'paper_lengths':paper_lengths})
 
 def import_data(request):
     path = request.POST.get('file_path',None)

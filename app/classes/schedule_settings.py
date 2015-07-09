@@ -6,11 +6,11 @@ The class is used to serialize and deserialize settings between a python list an
 The settings are stored in the following format
 settings_list: [[dayx_list]*]
 dayx_list:[slot*]
-slot:sequential_slot* | [parallel_slot*]
+slot:[sequential_slot] | [parallel_slot*]
 sequential_slot: time_in_minutes,
 parallel_slot: time_in_minutes,
 Example:
-    The list [[60, 60, 60 [60, 60, 60], [60, 60, 60], 60]] would create the folowing timetable
+    The list [[[60], [60], [60], [60, 60, 60], [60, 60, 60], [60]]] would create the folowing timetable
 
             SLOT1
             SLOT2
@@ -40,7 +40,7 @@ class schedule_settings_class(object):
 
     def add_slot_to_day(self, day:int, slot_length:int):
         day_schedule = self.settings[day]
-        day_schedule.append(slot_length)
+        day_schedule.append([slot_length])
         return
 
     def add_parallel_slots_to_day(self, day:int, slot_length:int, num_slots:int):
@@ -54,10 +54,7 @@ class schedule_settings_class(object):
     def change_slot_time(self, day:int, row:int, col:int, new_len:int):
         day_schedule = self.settings[day]
         row_schedule = day_schedule[row]
-        if type(row_schedule) == int:
-            day_schedule[row] = new_len
-        else:
-            row_schedule[col] = new_len
+        row_schedule[col] = new_len
         print(self.settings)
         return
 

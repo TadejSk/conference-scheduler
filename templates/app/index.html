@@ -15,7 +15,8 @@
                     <ul class="list-group">
                         {% for i in num_papers|custom_range %}
                             <a href="/app/papers/view/?id={{ paper_ids|get_element_at:i }}" name="paper">
-                                <li class="list-group-item">{{ paper_titles|get_element_at:i }}</li>
+                                <li class="list-group-item">{{ paper_titles|get_element_at:i }}
+                                ({{ paper_lengths|get_element_at:i }}min)</li>
                             </a>
                         {% endfor %}
                     </ul>
@@ -54,7 +55,7 @@
                 <table class="table">
                     {% for row in settings_list %}
                         <div class="row">
-                        {% for col in row|wrap_int_in_list %}
+                        {% for col in row %}
                             <div class="col-md-{{ row|allign_schedule }}">
                                 <div class="well" name="slot">
                                     Slot {{ forloop.parentloop.counter }}<br/>

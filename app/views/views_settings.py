@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import render, redirect
 from ..models import ScheduleSettings
-from ..classes import schedule_settings_class
+from ..classes import schedule_settings_class, schedule_manager_class
 import ast
 __author__ = 'Tadej'
 
@@ -40,9 +40,17 @@ def save_simple_schedule_settings(request):
 
 def schedule_add_slot(request):
     settings_model = ScheduleSettings.objects.get(user=request.user)
+    schedule = schedule_manager_class()
+    if settings_model.schedule_string == "[]":
+        schedule.set_settings(settings_model.settings_string)
+        schedule.create_empty_list_from_settings()
+    else:
+        schedule.import_paper_schedule(settings_model.schedule_string)
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
     settings.add_slot_to_day(int(request.POST.get('day')), settings_model.slot_length)
     settings_model.settings_string = str(settings)
+    schedule.add_slot_to_day(int(request.POST.get('day')))
+    settings_model.schedule_string = schedule.papers
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
@@ -52,6 +60,15 @@ def schedule_add_parallel_slots(request):
     settings.add_parallel_slots_to_day(int(request.POST.get('day')), settings_model.slot_length,
                                        int(request.POST.get('num_slots')))
     settings_model.settings_string = str(settings)
+    schedule = schedule_manager_class()
+    schedule.set_settings(settings_model.settings_string)
+    if settings_model.schedule_string == "[]":
+        schedule.set_settings(settings_model.settings_string)
+        schedule.create_empty_list_from_settings()
+    else:
+        schedule.import_paper_schedule(settings_model.schedule_string)
+    schedule.add_parallel_slots_to_day(int(request.POST.get('day')),int(request.POST.get('num_slots')))
+    settings_model.schedule_string = schedule.papers
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
