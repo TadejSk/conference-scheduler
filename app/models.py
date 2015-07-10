@@ -7,6 +7,7 @@ class Paper(models.Model):
     user = models.ForeignKey(User)
     cluster = models.IntegerField(default=0)
     length = models.IntegerField(default=60)
+    is_locked = models.BooleanField(default=False)
     def __str__(self):
         return self.title+" ("+self.user.username+")"
 

@@ -37,16 +37,19 @@ def index(request):
     paper_titles = []
     paper_ids = []
     paper_lengths = []
+    paper_locked = []
     for paper in papers:
         paper_titles.append(paper.title)
         paper_ids.append(paper.pk)
         paper_lengths.append(paper.length)
+        paper_locked.append(paper.is_locked)
     paper_dict = dict(zip(paper_ids, paper_titles))
+    paper_locked_dict = dict(zip(paper_ids, paper_locked))
     schedule = ast.literal_eval(settings.schedule_string)
     return render(request, 'app/index.html', {'num_authors':num_authors, 'num_papers':num_papers, 'num_days':num_days,
                                               'settings_list':settings_list,'paper_titles':paper_titles,
                                               'paper_ids':paper_ids, 'paper_dict':paper_dict, 'schedule':schedule,
-                                              'day':day, 'paper_lengths':paper_lengths})
+                                              'day':day, 'paper_lengths':paper_lengths, 'paper_locked':paper_locked_dict})
 
 def import_data(request):
     path = request.POST.get('file_path',None)

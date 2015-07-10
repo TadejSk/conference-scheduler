@@ -1,30 +1,34 @@
 __author__ = 'Tadej'
 import ast
 
-"""
-The class is used to serialize and deserialize settings between a python list and a settings string
-The settings are stored in the following format
-settings_list: [[dayx_list]*]
-dayx_list:[slot*]
-slot:[sequential_slot] | [parallel_slot*]
-sequential_slot: time_in_minutes,
-parallel_slot: time_in_minutes,
-Example:
-    The list [[[60], [60], [60], [60, 60, 60], [60, 60, 60], [60]]] would create the folowing timetable
-
-            SLOT1
-            SLOT2
-            SLOT3
-    SLOT4   SLOT4   SLOT4
-    SLOT5   SLOT5   SLOT5
-            SLOT6
-
-    Where each slot is 60 minutes long and occurs on day 1
-"""
 class schedule_settings_class(object):
+    """
+    The class is used to serialize and deserialize settings between a python list and a settings string
+    The settings are stored in the following format
+    settings_list: [[dayx_list]*]
+    dayx_list:[slot*]
+    slot:[sequential_slot] | [parallel_slot*]
+    sequential_slot: time_in_minutes,
+    parallel_slot: time_in_minutes,
+    Example:
+        The list [[[60], [60], [60], [60, 60, 60], [60, 60, 60], [60]]] would create the folowing timetable
+
+                SLOT1
+                SLOT2
+                SLOT3
+        SLOT4   SLOT4   SLOT4
+        SLOT5   SLOT5   SLOT5
+                SLOT6
+
+        Where each slot is 60 minutes long and occurs on day 1
+    """
     settings=[]
 
     def __init__(self, settings_string, num_days:int):
+        """
+        Initialises the class based on the settings string and the number of
+        days in the conference (which should both be obtained from the Settings model)
+        """
         if settings_string == "":
             self.settings = []
             for i in range(num_days):
@@ -56,6 +60,15 @@ class schedule_settings_class(object):
         row_schedule = day_schedule[row]
         row_schedule[col] = new_len
         print(self.settings)
+        return
+
+    def delete_slot(self, day:int, row:int, col:int):
+        self.settings[day][row][col] = None
+        self.settings[day][row] = [ x for x in self.settings[day][row] if x != None]
+        # If a parallel group of slots contains no more slots, the group should also be deleted
+        if self.settings[day][row] == []:
+            self.settings[day][row] = None
+            self.settings[day] = [ x for x in self.settings[day] if x != None]
         return
 
     def __str__(self):

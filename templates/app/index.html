@@ -1,105 +1,116 @@
 {% extends "app/base.html" %}
 {% block content %}
-{% load filters %}
-{% load staticfiles %}
-{% load tags %}
-<script src="{% static "app/js/index.js" %}"></script>
-<div class="container-fluid">
-    <div class="row-fluid">
-        <div class="col-md-2">
-            <div class="panel panel-default fixed-side-panel" id="paper-panel">
-                <div class="panel-heading">Papers</div>
-                <div class="panel-body scrollable">
-                    Imported papers: {{ num_papers }}
-                    Imported authors: {{ num_authors }}
-                    <ul class="list-group">
-                        {% for i in num_papers|custom_range %}
-                            <a href="/app/papers/view/?id={{ paper_ids|get_element_at:i }}" name="paper">
-                                <li class="list-group-item">{{ paper_titles|get_element_at:i }}
-                                ({{ paper_lengths|get_element_at:i }}min)</li>
-                            </a>
-                        {% endfor %}
-                    </ul>
-                    <a href="/app/papers/view/" class="btn btn-default">Add paper</a>
-                    <form action="{% url 'app:import_data' %}" method="post">
-                        {% csrf_token %}
-                        <div class="input-group col-md-10">
-                            <input type="text" class="form-control" name="file_path" id="file_path" value=""
-                                   placeholder="c:/datoteke/" /><br/>
-                        </div>
-                        <br/>
-                        <div class="input-group col-md-10">
-                            <input type="submit" class="btn btn-default" value="Uvozi podatke" />
-                        </div>
-                    </form>
+    {% load filters %}
+    {% load staticfiles %}
+    {% load tags %}
+    <script src="{% static "app/js/index.js" %}"></script>
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="col-md-2">
+                <div class="panel panel-default fixed-side-panel" id="paper-panel">
+                    <div class="panel-heading">Papers</div>
+                    <div class="panel-body scrollable">
+                        Imported papers: {{ num_papers }}
+                        Imported authors: {{ num_authors }}
+                        <ul class="list-group">
+                            {% for i in num_papers|custom_range %}
+                                <a href="/app/papers/view/?id={{ paper_ids|get_element_at:i }}" name="paper">
+                                    <li class="list-group-item">{{ paper_titles|get_element_at:i }}
+                                        ({{ paper_lengths|get_element_at:i }}min)
+                                    </li>
+                                </a>
+                            {% endfor %}
+                        </ul>
+                        <a href="/app/papers/view/" class="btn btn-default">Add paper</a>
+
+                        <form action="{% url 'app:import_data' %}" method="post">
+                            {% csrf_token %}
+                            <div class="input-group col-md-10">
+                                <input type="text" class="form-control" name="file_path" id="file_path" value=""
+                                       placeholder="c:/datoteke/"/><br/>
+                            </div>
+                            <br/>
+
+                            <div class="input-group col-md-10">
+                                <input type="submit" class="btn btn-default" value="Uvozi podatke"/>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-10">
-            <div class="panel panel-default" id="maindiv">
-                <div class="panel-heading">
-                    Schedule (
-                    {% for i in num_days|custom_range %}
-                        {%  if  i != day %}
-                            <a href = "/app/index/?day={{ i }}">Day {{ i|add:1 }}</a>
-                        {%  else %}
-                            Day {{ i|add:1 }}
-                        {% endif %}
-                        {%  if i|add:1 < num_days %}
-                            |
-                        {% endif %}
-                    {% endfor %}
-                    )
-                </div>
-                <div class="panel-body" id="schedule_div">
-                <table class="table">
-                    {% for row in settings_list %}
-                        <div class="row">
-                        {% for col in row %}
-                            <div class="col-md-{{ row|allign_schedule }}">
-                                <div class="well" name="slot">
-                                    Slot {{ forloop.parentloop.counter }}<br/>
-                                    Length: {{ col }}min <br/>
-                                    Free time: {{ col }}min <br/>
-                                    <!-- Display all the papers in the slot -->
-                                    {%  get_paper schedule day forloop.parentloop.counter0 forloop.counter0 as papers %}
-                                    {% for paper in papers %}
-                                    <a href="/app/papers/view/?id={{paper}}" name="paper">
-                                        <div class="well">
-                                            {{ paper_dict|get_element_at:paper}}
-                                        </div>
-                                    </a>
-                                    {% endfor %}
-                                    <input class="hidden", value="{{ forloop.counter0 }}" id="col", name="col"/>
-                                    <input class="hidden", value="{{ forloop.parentloop.counter0 }}" id="row", name="row"/>
-                                    <!--
-                                    <form action="{% url 'app:schedule_add_parallel_slots' %}" method="post" class="form-inline">
-                                         {% csrf_token %}
-                                        <input class="hidden", value="{{ forloop.counter0 }}" id="col", name="col"/>
-                                        <input class="hidden", value="{{ forloop.parentloop.counter0 }}" id="row", name="row"/>
-                                        <div class="input-group">
-                                            <span class="input-group-btn">
-                                                <button type="submit" class="btn btn-primary">Add pararel slots</button>
-                                            </span>
-                                            <input type="text" id="num_slots" name="num_slots" class="form-control"
-                                                   placeholder="Number of slots">
-                                        </div>
-                                    </form>
-                                    -->
-                                    {% with num_lines=col|div:20 %}
-                                        {% for b in num_lines|custom_range %}
-                                            <br/>
-                                        {% endfor %}
-                                    {% endwith %}
-                                </div>
-                            </div>
+            <div class="col-md-10">
+                <div class="panel panel-default" id="maindiv">
+                    <div class="panel-heading">
+                        Schedule (
+                        {% for i in num_days|custom_range %}
+                            {% if  i != day %}
+                                <a href="/app/index/?day={{ i }}">Day {{ i|add:1 }}</a>
+                            {% else %}
+                                Day {{ i|add:1 }}
+                            {% endif %}
+                            {% if i|add:1 < num_days %}
+                                |
+                            {% endif %}
                         {% endfor %}
-                        </div>
-                    {% endfor %}
-                </table>
+                        )
+                    </div>
+                    <div class="panel-body" id="schedule_div">
+                        <table class="table">
+                            {% for row in settings_list %}
+                                <div class="row">
+                                    {% for col in row %}
+                                        <div class="col-md-{{ row|allign_schedule }}">
+                                            <div class="well" name="slot">
+                                                Slot {{ forloop.parentloop.counter }}<br/>
+                                                Length: {{ col }}min <br/>
+                                                Free time: {{ col }}min <br/>
+                                                <!-- Display all the papers in the slot -->
+                                                {% get_paper schedule day forloop.parentloop.counter0 forloop.counter0 as papers %}
+                                                {% for paper in papers %}
+                                                        <div class="well">
+                                                                <div class="row">
+                                                                    <a href="/app/papers/view/?id={{ paper }}" name="paper">
+                                                                    <div class="col-xs-8">
+                                                                        {{ paper_dict|get_element_at:paper }}
+                                                                    </div>
+                                                                        </a>
+                                                                    <div class="col-xs-4">
+                                                                            {% if paper_locked|get_element_at:paper %}
+                                                                                <p class="text-right">
+                                                                                    <input type="submit" class="btn btn-sm btn-danger"
+                                                                                           value="Unlock paper" name="lock-button"
+                                                                                            id="{{ paper }}"/>
+                                                                                </p>
+
+                                                                            {% else %}
+                                                                                <p class="text-right">
+                                                                                    <input type="submit" class="btn btn-sm btn-primary"
+                                                                                           value="Lock paper" name="lock-button"
+                                                                                            id="{{ paper }}"/>
+                                                                                </p>
+                                                                            {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                        </div>
+                                                {% endfor %}
+                                                <input class="hidden" , value="{{ forloop.counter0 }}" id="col" ,
+                                                       name="col"/>
+                                                <input class="hidden" , value="{{ forloop.parentloop.counter0 }}"
+                                                       id="row" , name="row"/>
+                                                {% with num_lines=col|div:20 %}
+                                                    {% for b in num_lines|custom_range %}
+                                                        <br/>
+                                                    {% endfor %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock content %}

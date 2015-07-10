@@ -13,10 +13,12 @@ urlpatterns = [
     url(r'^settings/schedule/add_slot/', views.schedule_add_slot, name='schedule_add_slot'),
     url(r'^settings/schedule/add_parallel_slots/', views.schedule_add_parallel_slots, name='schedule_add_parallel_slots'),
     url(r'^settings/schedule/change_slot_length/', views.schedule_change_slot_time, name='schedule_change_slot_length'),
+    url(r'^settings/schedule/delete_slot/', views.delete_slot, name='schedule_delete_slot'),
     url(r'^settings/schedule/', views.schedule_settings, name='schedule_settings'),
     url(r'^papers/view/', views.view_paper, name='view_papers'),
     url(r'^papers/update/', views.update_paper, name='update_paper'),
     url(r'^papers/add_to_schedule/', views.add_paper_to_schedule, name='add_paper_to_schedule'),
     url(r'^papers/remove_from_schedule/', views.remove_paper_from_schedule, name='remove_paper_from_schedule'),
+    url(r'^papers/change_lock/', views.lock_paper, name='lock_paper'),
 
 ]

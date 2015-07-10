@@ -67,3 +67,13 @@ def remove_paper_from_schedule(request):
     settings.schedule_string = str(set.papers)
     settings.save()
     return redirect('/app/index')
+
+@csrf_exempt
+def lock_paper(request):
+    id = int(request.POST.get('id'))
+    paper = Paper.objects.get(pk=id)
+    if paper.user != request.user:
+        raise Http404
+    paper.is_locked = not paper.is_locked
+    paper.save()
+    return redirect('/app/index')

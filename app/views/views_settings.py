@@ -73,11 +73,25 @@ def schedule_add_parallel_slots(request):
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
 def schedule_change_slot_time(request):
-    print("bbb")
     settings_model = ScheduleSettings.objects.get(user=request.user)
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
     settings.change_slot_time(day=int(request.POST.get('day')), row=int(request.POST.get('row')),
                               col=int(request.POST.get('col')),new_len=int(request.POST.get('len')))
     settings_model.settings_string = str(settings)
+    settings_model.save()
+    return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+
+def delete_slot(request):
+    day = int(request.POST.get('day'))
+    row = int(request.POST.get('row'))
+    col = int(request.POST.get('col'))
+    settings_model = ScheduleSettings.objects.get(user=request.user)
+    settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
+    schedule = schedule_manager_class()
+    schedule.import_paper_schedule(settings_model.schedule_string)
+    settings.delete_slot(day,row,col)
+    schedule.delete_slot(day,row,col)
+    settings_model.settings_string = str(settings)
+    settings_model.schedule_string = str(schedule)
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))

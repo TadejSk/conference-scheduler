@@ -106,6 +106,16 @@ class schedule_manager_class(object):
         day_schedule.append(parallel_slots)
         return
 
+    def delete_slot(self, day:int, row:int, col:int):
+        self.papers[day][row][col] = None
+        self.papers[day][row] = [ x for x in self.papers[day][row] if x != None]
+        # If a parallel group of slots contains no more slots, the group should also be deleted
+        if self.papers[day][row] == []:
+            self.papers[day][row] = None
+            self.papers[day] = [ x for x in self.papers[day] if x != None]
+        return
+
+
     def __str__(self):
-        return str(self.settings)
+        return str(self.papers)
 
