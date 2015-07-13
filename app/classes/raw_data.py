@@ -12,8 +12,8 @@ class raw_data(object):
 
     def parse_accepted(self):
         sheet = self.accepted.sheet_by_index(0)
-        print(sheet.name, sheet.nrows, sheet.ncols)
         for row in range(1,sheet.nrows):
+            id = sheet.cell_value(rowx = row, colx = 0)
             title = sheet.cell_value(rowx = row, colx = 2)
             abstract = sheet.cell_value(rowx = row, colx = 3)
             authors = []
@@ -21,6 +21,6 @@ class raw_data(object):
                 if(author.endswith(' ')):
                     author = author[:-1]
                 authors.append(author)
-            p = paper(authors=authors, abstract=abstract, title=title)
+            p = paper(authors=authors, abstract=abstract, title=title, submission_id = id)
             self.accepted_papers_list.append(p)
         return self

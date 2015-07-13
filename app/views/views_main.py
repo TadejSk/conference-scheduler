@@ -66,9 +66,9 @@ def import_data(request):
             db_paper = Paper()
             db_paper.title = paper.title
             db_paper.abstract = paper.abstract
+            db_paper.submission_id = paper.submission_id
             db_paper.user = request.user
             db_paper.save()
-            #print(paper.authors)
             for author in paper.authors:
                 if not Author.objects.filter(name=author, user=request.user ).exists():
                     db_author = Author()
@@ -77,7 +77,7 @@ def import_data(request):
                     db_author.save()
                     db_author.papers.add(db_paper)
                 else:
-                    db_author = Author.objects.get(name=author)
+                    db_author = Author.objects.get(name=author, user=request.user)
                     db_author.papers.add(db_paper)
     request.session['accepted_path'] = accepted_path
     request.session['assignments_path'] = assignments_path

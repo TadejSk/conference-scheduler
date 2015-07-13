@@ -46,12 +46,10 @@ def add_paper_to_schedule(request):
     col = request.POST.get('col')
     id = request.POST.get('id')
     day = request.POST.get('day')
-    print("Sending in", day, row, col)
     set.set_settings(settings.settings_string)
     set.assign_paper(int(id), int(day), int(row), int(col))
     settings.schedule_string = str(set.papers)
     settings.save()
-    print(set.papers)
     return redirect('/app/index/')
 
 @csrf_exempt
@@ -63,6 +61,10 @@ def remove_paper_from_schedule(request):
     else:
         set.import_paper_schedule(settings.schedule_string)
     id = int(request.POST.get('id'))
+    # Since papers not in schedule do not display if they are locked, they should be unlocked when removed from schedule
+    paper = Paper.objects.get(pk=id)
+    paper.is_locked = False
+    paper.save()
     set.remove_paper(id)
     settings.schedule_string = str(set.papers)
     settings.save()

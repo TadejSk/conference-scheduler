@@ -8,6 +8,7 @@ class Paper(models.Model):
     cluster = models.IntegerField(default=0)
     length = models.IntegerField(default=60)
     is_locked = models.BooleanField(default=False)
+    submission_id = models.IntegerField()   # The id imported from the xls file - used for constructing graphs
     def __str__(self):
         return self.title+" ("+self.user.username+")"
 

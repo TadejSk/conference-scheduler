@@ -59,7 +59,6 @@ class schedule_settings_class(object):
         day_schedule = self.settings[day]
         row_schedule = day_schedule[row]
         row_schedule[col] = new_len
-        print(self.settings)
         return
 
     def delete_slot(self, day:int, row:int, col:int):

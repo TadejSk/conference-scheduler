@@ -49,7 +49,6 @@ class schedule_manager_class(object):
         day = self.papers[day]
         row = day[slot_row]
         col = row[slot_col]
-        print(Paper.objects.get(pk=paper).length, free_time)
         if Paper.objects.get(pk=paper).length > free_time:
             return False
         col.append(paper)
@@ -67,7 +66,6 @@ class schedule_manager_class(object):
         return False
 
     def get_slot_free_time(self, day:int, row:int, col:int):
-        print(self.settings)
         max_length = self.settings[day][row][col]
         slot = self.papers[day][row][col]
         total_length = 0
@@ -90,7 +88,6 @@ class schedule_manager_class(object):
                     schedule_row.append([])
                 schedule_day.append(schedule_row)
             schedule.append(schedule_day)
-        print("Empty list", schedule)
         self.papers = schedule
 
     def add_slot_to_day(self, day:int):
