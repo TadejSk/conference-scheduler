@@ -39,4 +39,4 @@ def multiarg_get_element_at(value, arg):
     element = value
     for arg in args():
         element = value[arg]
-    return e
+    return element

@@ -6,6 +6,9 @@ class Paper(models.Model):
     abstract = models.TextField(max_length=1000000)
     user = models.ForeignKey(User)
     cluster = models.IntegerField(default=0)
+    add_to_day = models.IntegerField(default = -1)
+    add_to_row = models.IntegerField(default = -1)
+    add_to_col = models.IntegerField(default = -1)
     length = models.IntegerField(default=60)
     is_locked = models.BooleanField(default=False)
     submission_id = models.IntegerField()   # The id imported from the xls file - used for constructing graphs
