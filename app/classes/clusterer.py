@@ -6,6 +6,9 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.cluster import KMeans
 class Clusterer:
     """
+    TODO - Take into account graph data
+         - Take into account locked and unlocked papers
+         - Add an option to lock entire slots?
     :type papers: list[Paper]
     :type data_list : list[list[string]]
     """
@@ -102,57 +105,73 @@ class Clusterer:
         Assigns papers to clusters based on the self.cluster_distances obtained from the basic_clustering function
         Uses an iterative approach, where the biggest empty slot on the schedule is filled first, followed by the next
         biggest one, and so on until is no more papers that fit in the remaing empty time
-        """
-        # Get biggest empty slot
-        slot_length = 0
-        slot_index = 0
-        for index,length in enumerate(self.slot_lengths):
-            if length > slot_length:
-                slot_length = length
-                slot_index = index
 
-        # Select biggest cluster
-        cluster_sizes = [self.cluster_values.count(i) for i in range(0, self.num_clusters)]
-        max_cluster = cluster_sizes.index(max(cluster_sizes))
-        # Get papers from that cluster
-        print(len(self.papers))
-        print(len(self.cluster_values))
-        cluster_papers = [p for p in self.papers if self.cluster_values[self.papers.index(p)] == max_cluster]
-        # Select papers that fit into the slot
-        papers = []
-        self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
-        if papers == []:
-            print("NO SUITABLE COMBINATION FOUND")
-        else:
-            # if there are multiple fitting groups in the same cluster, select the group with the smallest error
-            selected_index = 0
-            if len(papers) > 1:
-                min_error = 9999999999999
-                for index,subset in enumerate(papers):
-                    error = 0
-                    for paper in subset:
-                        error += self.cluster_distances[paper][max_cluster]*self.cluster_distances[paper][max_cluster]
-                    print("ERROR: " + str(error))
-                    if error < min_error:
-                        selected_index = index
-                        min_error = error
-                print(selected_index, min_error)
-        # Update the papers' add_to_day/row/col fields. This fields will then be used to add the papers into the schedule
-        # Also update the papers' cluster field
-        ids = [self.papers[i].id for i in papers[selected_index]]
-        papers_to_update = [self.papers[i] for i in papers[selected_index]]
-        for paper in papers_to_update:
-            paper.cluster = self.current_cluster
-            coords = self.slot_coords[slot_index]
-            paper.add_to_day = coords[0]
-            paper.add_to_row = coords[1]
-            paper.add_to_col = coords[2]
+        Possible imporovements:
+            Should clustering be rerun after every slot is filled?
+            Is there a better clustering algorithm?
+            Is this iterative aproach even a good idea?
+        """
+        # Every paper should first have it's cluster and add_to_X fields reset
+        for paper in self.papers:
+            paper.add_to_day = -1
+            paper.add_to_row = -1
+            paper.add_to_col = -1
+            paper.cluster = 0
             paper.save()
-        self.current_cluster += 1
-        # remove the assigned papers from this class, since they no longer need to be assigned
-        for paper in papers_to_update:
-            self.papers.remove(paper)
-        print("END PAPERS", len(self.papers))
+        # The following is repeated for every cluster independently
+        while self.slot_lengths != []:
+            # Get biggest empty slot
+            slot_length = 0
+            slot_index = 0
+            for index,length in enumerate(self.slot_lengths):
+                if length > slot_length:
+                    slot_length = length
+                    slot_index = index
+            # Select biggest cluster
+            cluster_sizes = [self.cluster_values.count(i) for i in range(0, self.num_clusters)]
+            max_cluster = cluster_sizes.index(max(cluster_sizes))
+            # Get papers from that cluster
+            print(len(self.papers))
+            print(len(self.cluster_values))
+            cluster_papers = [p for p in self.papers if self.cluster_values[self.papers.index(p)] == max_cluster]
+            # Select papers that fit into the slot
+            papers = []
+            self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
+            if papers == []:
+                print("NO SUITABLE COMBINATION FOUND")
+            else:
+                # if there are multiple fitting groups in the same cluster, select the group with the smallest error
+                selected_index = 0
+                if len(papers) > 1:
+                    min_error = 9999999999999
+                    for index,subset in enumerate(papers):
+                        error = 0
+                        for paper in subset:
+                            error += self.cluster_distances[paper][max_cluster]*self.cluster_distances[paper][max_cluster]
+                        print("ERROR: " + str(error))
+                        if error < min_error:
+                            selected_index = index
+                            min_error = error
+                    print(selected_index, min_error)
+            # Update the papers' add_to_day/row/col fields. This fields will then be used to add the papers into the schedule
+            # Also update the papers' cluster field
+            ids = [self.papers[i].id for i in papers[selected_index]]
+            papers_to_update = [self.papers[i] for i in papers[selected_index]]
+            for paper in papers_to_update:
+                paper.cluster = self.current_cluster
+                coords = self.slot_coords[slot_index]
+                paper.add_to_day = coords[0]
+                paper.add_to_row = coords[1]
+                paper.add_to_col = coords[2]
+                paper.save()
+            self.current_cluster += 1
+            # remove the assigned papers from this class, since they no longer need to be assigned
+            for paper in papers_to_update:
+                self.papers.remove(paper)
+            # also remove the information about the slot
+            del self.slot_lengths[slot_index]
+            del self.slot_coords[slot_index]
+            print("END PAPERS", len(self.papers))
 
         """
         for max_time in self.slot_lengths:
