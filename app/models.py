@@ -31,3 +31,5 @@ class ScheduleSettings(models.Model):
     def __str__(self):
         return self.settings_string
 
+class UpoladedFile(models.Model):
+    file = models.FileField(upload_to='uploads/%Y%m%d')

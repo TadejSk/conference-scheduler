@@ -115,6 +115,10 @@ STATICFILES_DIRS = (
 # Login url
 LOGIN_URL = '/app/login'
 
+# Uploaded files location
+MEDIA_ROOT = os.path.join(BASE_DIR, 'user_files')
+MEDIA_URL = '/user_files/'
+
 TEMPLATE_CONTEXT_PROCESSORS = ["django.contrib.auth.context_processors.auth",
                                 "django.template.context_processors.debug",
                                 "django.template.context_processors.i18n",

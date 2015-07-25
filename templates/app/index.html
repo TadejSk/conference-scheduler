@@ -3,6 +3,9 @@
     {% load filters %}
     {% load staticfiles %}
     {% load tags %}
+    {% load bootstrap3 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
     <script src="{% static "app/js/index.js" %}"></script>
     <div class="container-fluid">
         <div class="row-fluid">
@@ -24,24 +27,24 @@
                         </ul>
                         <a href="/app/papers/view/" class="btn btn-primary">Add paper</a>
                         <br/><br/>
-                        <form action="{% url 'app:import_data' %}" method="post">
+                        <form method="post" action="{% url 'app:import_data' %}" enctype="multipart/form-data">
                             {% csrf_token %}
-                            <div class="input-group col-md-10">
-                                <input type="text" class="form-control" name="file_path" id="file_path" value=""
-                                       placeholder="c:/datoteke/"/>
-                            <br/>
-                                    <input type="submit" class="btn btn-primary" value="Import Papers"/>
-                                </div>
+                            {% bootstrap_form papers_form %}
+                            {% buttons %}
+                                <button type="submit" class="btn btn-primary">
+                                   Import papers
+                                </button>
+                            {% endbuttons %}
                         </form>
                         <br/>
-                        <form action="{% url 'app:import_data' %}" method="post">
+                        <form method="post" action="{% url 'app:import_assignments_data' %}" enctype="multipart/form-data">
                             {% csrf_token %}
-                            <div class="input-group col-md-10">
-                                <input type="text" class="form-control" name="file_path" id="file_path" value=""
-                                       placeholder="c:/datoteke/"/>
-                            <br/>
-                                    <input type="submit" class="btn btn-primary" value="Import Assignments"/>
-                                </div>
+                            {% bootstrap_form assignments_form %}
+                            {% buttons %}
+                                <button type="submit" class="btn btn-primary">
+                                   Import assigments
+                                </button>
+                            {% endbuttons %}
                         </form>
                         <br/><br/>
                     </div>

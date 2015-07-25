@@ -32,6 +32,9 @@ def index(request):
         raise Http404('The selected day is too high')
     settings_str = settings.settings_string
     settings_list = ast.literal_eval(settings.settings_string)[int(request.GET.get('day',0))]
+    # Create the form for uploading files
+    papers_form = FileForm()
+    assignments_form = AssignmentsFileForm()
     # Create a list of all the papers that the user has imported/created
     papers = Paper.objects.filter(user=request.user).order_by('title')
     paper_titles = []
@@ -52,17 +55,19 @@ def index(request):
                                               'settings_list':settings_list,'paper_titles':paper_titles,
                                               'paper_ids':paper_ids, 'paper_dict':paper_dict, 'schedule':schedule,
                                               'day':day, 'paper_lengths':paper_lengths, 'paper_locked':paper_locked_dict,
-                                              'paper_clusters': paper_clusters})
+                                              'paper_clusters': paper_clusters, 'papers_form':papers_form,
+                                              'assignments_form':assignments_form})
 
 def import_data(request):
-    path = request.POST.get('file_path',None)
-    if not path :
+    file = request.FILES.get('file', None)
+    if not file :
         return redirect('/app/index')
-    if path[len(path)-1] != '/':
-        path += '/'
-    accepted_path = path + 'accepted.xls'
-    assignments_path = path + 'assignments.csv'
-    data = raw_data(accepted_path,assignments_path)
+    file_model = UpoladedFile()
+    file_model.file = file
+    file_model.save()
+    print(file_model.file.path)
+    papers_path = file_model.file.path
+    data = raw_data(papers_path,None)
     p = data.parse_accepted()
     for paper in p.accepted_papers_list:
         if not Paper.objects.filter(title=paper.title, user=request.user).exists():
@@ -82,7 +87,22 @@ def import_data(request):
                 else:
                     db_author = Author.objects.get(name=author, user=request.user)
                     db_author.papers.add(db_paper)
-    request.session['accepted_path'] = accepted_path
-    request.session['assignments_path'] = assignments_path
+    #request.session['accepted_path'] = accepted_path
+    #request.session['assignments_path'] = assignments_path
+    file_model.file.delete()
+    return redirect('/app/index')
+
+def import_assignments_data(request):
+    file = request.FILES.get('file', None)
+    if not file :
+        return redirect('/app/index')
+    file_model = UpoladedFile()
+    file_model.file = file
+    file_model.save()
+    print(file_model.file.path)
+    path = file_model.file.path
+    data = raw_data(None,path)
+    #data.parse_accepted()
+    data.parse_assignments()
     return redirect('/app/index')
 
