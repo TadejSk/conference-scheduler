@@ -16,7 +16,7 @@
                                                placeholder="1"/>
                             </div>
                             <div class="input-group col-md-3">
-                                <div class="input-group-addon">Amount of hours per block</div>
+                                <div class="input-group-addon">Minutes per block</div>
                                 <input type="text" class="form-control" name="base_time" id="base_time"
                                        value={{ base_time }}
                                                placeholder="60"/>
@@ -120,9 +120,10 @@
                                         <span class="input-group-btn">
                                             <button type="submit" class="btn btn-primary">Add pararel slots</button>
                                         </span>
-                                            <input type="text" id="num_slots" name="num_slots" class="form-control"
-                                                   placeholder="Number of slots">
+                                        <input type="text" id="num_slots" name="num_slots" class="form-control"
+                                               placeholder="Number of slots">
                                         </div>
+                                        <label class="">{{ error }}</label>
                                     </form>
                                 </div>
                             </div>

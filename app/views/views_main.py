@@ -9,6 +9,7 @@ __author__ = 'Tadej'
 
 @login_required
 def index(request):
+    request.session['parallel_error']=""
     # Get the number of all authors and papers
     num_authors = Author.objects.filter(user=request.user).count()
     num_papers = Paper.objects.filter(user=request.user).count()

@@ -54,6 +54,7 @@ class schedule_manager_class(object):
         col.append(paper)
         return True
 
+
     def remove_paper(self, paper:int):
         for di,day_list in enumerate(self.papers):
             for ri,row in enumerate(day_list):

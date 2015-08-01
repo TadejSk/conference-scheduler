@@ -6,6 +6,7 @@ import ast
 __author__ = 'Tadej'
 
 def schedule_settings(request):
+    error = request.session['parallel_error']
     settings = ScheduleSettings.objects.get(user=request.user)
     num_days = None
     base_time = None
@@ -17,7 +18,7 @@ def schedule_settings(request):
         raise Http404('The selected day is too high')
     settings_list = ast.literal_eval(settings.settings_string)[int(request.GET.get('day',0))]
     return render(request, 'app/settings/schedule.html', {'num_days':num_days, 'base_time':base_time, 'day':day,
-                                                          'settings_list':settings_list})
+                                                          'settings_list':settings_list, 'error':error})
 
 def save_simple_schedule_settings(request):
     num_days = request.POST.get('num_days',None)
@@ -32,8 +33,18 @@ def save_simple_schedule_settings(request):
         settings=ScheduleSettings.objects.get(user=request.user)
         settings.num_days=num_days
         settings.slot_length=base_time
+        # Update settings string
         s = schedule_settings_class(settings.settings_string, int(settings.num_days))
         settings.settings_string = str(s)
+        # Update schedule string
+        schedule = ast.literal_eval(settings.schedule_string)
+
+        if len(schedule) < int(num_days):
+            for i in range(int(num_days)-len(schedule)):
+                    schedule.append([])
+        if len(schedule) > int(num_days):
+            schedule = schedule[:int(num_days)]
+        settings.schedule_string = str(schedule)
         # If we added extra days, the settings string needs to be updated
         settings.save()
     return redirect('/app/settings/schedule/')
@@ -55,6 +66,10 @@ def schedule_add_slot(request):
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
 def schedule_add_parallel_slots(request):
+    request.session['parallel_error']=""
+    if not request.POST.get('num_slots').isdigit():
+        request.session['parallel_error'] = "Enter a valid integer"
+        return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
     settings_model = ScheduleSettings.objects.get(user=request.user)
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
     settings.add_parallel_slots_to_day(int(request.POST.get('day')), settings_model.slot_length,
