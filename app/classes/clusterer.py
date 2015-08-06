@@ -4,6 +4,8 @@ from sklearn import cluster
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+import numpy as np
 class Clusterer:
     """
     TODO - Take into account graph data
@@ -22,6 +24,9 @@ class Clusterer:
     slot_lengths = []
     slot_coords = []
     current_cluster = 1
+    cluster_function = None
+    visual_coords_x = []
+    visual_coords_y = []
     def __init__(self, papers: list, schedule: list, schedule_settings: list):
         self.papers = []
         self.data = []
@@ -33,12 +38,13 @@ class Clusterer:
         self.slot_coords = []
         self.current_cluster = 1
         self.add_papers(papers)
-        print("START PAPERS", len(self.papers))
         self.schedule = schedule
         self.schedule_settings = schedule_settings
         self.get_clusters()
         #self.find_papers_with_sum(self.papers,[],180,0,result)
-        print("CLUSTERS:", self.slot_lengths)
+        self.cluster_function = KMeans(n_clusters=self.num_clusters)
+        self.visual_coords_x = []
+        self.visual_coords_y = []
         pass
 
 
@@ -64,7 +70,6 @@ class Clusterer:
                         self.num_clusters += 1
                         self.slot_lengths.append(self.schedule_settings[d][r][c])
                         self.slot_coords.append([d,r,c])
-        print(self.slot_lengths)
 
     def create_dataset(self):
         self.data_list = []
@@ -79,11 +84,12 @@ class Clusterer:
 
 
     def basic_clustering(self):
-        clusterer = KMeans(n_clusters=self.num_clusters)
-        self.cluster_distances = clusterer.fit_transform(self.data)
-        self.cluster_values = clusterer.fit_predict(self.data).tolist()
+        self.cluster_distances = self.cluster_function.fit_transform(self.data)
+        self.cluster_values = self.cluster_function.fit_predict(self.data).tolist()
+        # Get coordinates for visualization
+        self.get_coords()
         #for i in range(0,len(self.cluster_distances)):
-        #    print(self.papers[i].title, "-", self.cluster_distances[i], aaa[i])
+        #    print(self.papers[i].title, "-", self.cluster_distances[i])
 
     def find_papers_with_sum(self, set, subset, desired_sum, curr_index, result):
         lens = [p.length for p in subset]
@@ -98,7 +104,15 @@ class Clusterer:
         for i in range(curr_index, len(set)):
             self.find_papers_with_sum(set, subset + [set[i]], desired_sum, i+1, result)
 
+    def get_coords(self):
+        pca_data = PCA(n_components=2).fit_transform(self.data.toarray())
+        self.cluster_function.fit(pca_data)
 
+        print("--------------COORDS------------")
+        print(pca_data[:,0])
+        print(pca_data[:,1])
+        self.visual_coords_x = pca_data[:,0]
+        self.visual_coords_y =  pca_data[:,1]
 
     def fit_to_schedule(self):
         """
@@ -131,8 +145,6 @@ class Clusterer:
             cluster_sizes = [self.cluster_values.count(i) for i in range(0, self.num_clusters)]
             max_cluster = cluster_sizes.index(max(cluster_sizes))
             # Get papers from that cluster
-            print(len(self.papers))
-            print(len(self.cluster_values))
             cluster_papers = [p for p in self.papers if self.cluster_values[self.papers.index(p)] == max_cluster]
             # Select papers that fit into the slot
             papers = []
@@ -148,30 +160,34 @@ class Clusterer:
                         error = 0
                         for paper in subset:
                             error += self.cluster_distances[paper][max_cluster]*self.cluster_distances[paper][max_cluster]
-                        print("ERROR: " + str(error))
                         if error < min_error:
                             selected_index = index
                             min_error = error
-                    print(selected_index, min_error)
             # Update the papers' add_to_day/row/col fields. This fields will then be used to add the papers into the schedule
             # Also update the papers' cluster field
             ids = [self.papers[i].id for i in papers[selected_index]]
-            papers_to_update = [self.papers[i] for i in papers[selected_index]]
-            for paper in papers_to_update:
+            papers_to_update = [(self.papers[i],i) for i in papers[selected_index]]
+            for paper, index in papers_to_update:
                 paper.cluster = self.current_cluster
                 coords = self.slot_coords[slot_index]
                 paper.add_to_day = coords[0]
                 paper.add_to_row = coords[1]
                 paper.add_to_col = coords[2]
+                print("COORD ",  index, self.visual_coords_x[index], self.visual_coords_y[index])
+                paper.visul_x = self.visual_coords_x[index]
+                paper.visual_y = self.visual_coords_y[index]
                 paper.save()
             self.current_cluster += 1
             # remove the assigned papers from this class, since they no longer need to be assigned
-            for paper in papers_to_update:
+            for paper, index in papers_to_update:
                 self.papers.remove(paper)
+                np.delete(self.visual_coords_x, index)
+                np.delete(self.visual_coords_y, index)
             # also remove the information about the slot
             del self.slot_lengths[slot_index]
             del self.slot_coords[slot_index]
-            print("END PAPERS", len(self.papers))
+        # Return the cluster coordinates - used for visualization
+        self.get_coords()
 
         """
         for max_time in self.slot_lengths:

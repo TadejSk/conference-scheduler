@@ -1,6 +1,6 @@
 import ast
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from app.models import Paper, ScheduleSettings
 from ..classes.clusterer import Clusterer
 from ..classes.schedule_manager import schedule_manager_class
@@ -31,4 +31,25 @@ def basic_clustering(request):
     schedule_settings = ScheduleSettings.objects.filter(user = request.user).first()
     schedule_settings.schedule_string = schedule_manager.papers
     schedule_settings.save()
-    return redirect("/app/index")
+    return redirect('/app/clustering/results')
+
+def clustering_results(request):
+    # Get paper info for displaying papers on the result page
+    num_papers = Paper.objects.filter(user=request.user,cluster__gte=1).count()
+    papers = Paper.objects.filter(user=request.user, cluster__gte=1).order_by('cluster')
+    paper_titles = []
+    paper_ids = []
+    paper_clusters = []
+    paper_coords_x = []
+    paper_coords_y = []
+    for paper in papers:
+        paper_titles.append(paper.title)
+        paper_ids.append(paper.pk)
+        paper_clusters.append(paper.cluster)
+        paper_coords_x.append(paper.visual_x)
+        paper_coords_y.append(paper.visual_y)
+    return render(request, 'app/clustering_results.html',
+                  {'num_papers':num_papers, 'paper_titles':paper_titles,
+                   'paper_ids':paper_ids, 'paper_clusters':paper_clusters,
+                   'paper_coords_x':paper_coords_x,
+                   'paper_coords_y':paper_coords_y})

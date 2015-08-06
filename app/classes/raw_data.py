@@ -78,8 +78,8 @@ class raw_data(object):
         """
         Generates a graph of papers. In this graph, two papers are connected, if a reviewer expressed interset in reviewing
         both of them. The connections are weighted depending on the number of connections, and the interest expressed by
-        the reviewer (yes or maybe)
-        :return:
+        the reviewer (yes or maybe). Returns a list describing the created graph.
+        :return: list[list[int, int, int]]
         """
         self.graph = self.PaperGraph()
         with open(self.assigments, 'r') as file:
@@ -115,5 +115,12 @@ class raw_data(object):
                         #if(matrix[row][col] * matrix[row2][col] != 0):
                         #    print("Connected", id, id2, matrix[row][col] * matrix[row2][col])
             print(len(self.graph.connections))
+            # This now contains a graph connecting the papers according to their reviewers
+            # This now needs to be saved into the database
+            # Serialize connections as a list of lists
+            connection_list = []
+            for connection in self.graph.connections:
+                connection_list.append([int(connection.paper1), int(connection.paper2), connection.weight])
+            return connection_list
 
 

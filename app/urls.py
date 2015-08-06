@@ -22,5 +22,5 @@ urlpatterns = [
     url(r'^papers/remove_from_schedule/', views.remove_paper_from_schedule, name='remove_paper_from_schedule'),
     url(r'^papers/change_lock/', views.lock_paper, name='lock_paper'),
     url(r'^clustering/basic/', views.basic_clustering, name='basic_clustering'),
-
+    url(r'^clustering/results/', views.clustering_results, name='clustering_results'),
 ]

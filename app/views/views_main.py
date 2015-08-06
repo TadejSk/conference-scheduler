@@ -104,6 +104,9 @@ def import_assignments_data(request):
     path = file_model.file.path
     data = raw_data(None,path)
     #data.parse_accepted()
-    data.parse_assignments()
+    graph_list = data.parse_assignments()
+    settings = ScheduleSettings.objects.get(user = request.user)
+    settings.paper_graph_string = str(graph_list)
+    settings.save()
     return redirect('/app/index')
 

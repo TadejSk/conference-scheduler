@@ -12,6 +12,8 @@ class Paper(models.Model):
     length = models.IntegerField(default=60)
     is_locked = models.BooleanField(default=False)
     submission_id = models.IntegerField()   # The id imported from the xls file - used for constructing graphs
+    visual_x = models.FloatField(default = 0)
+    visual_y = models.FloatField(default = 0)
     def __str__(self):
         return self.title+" ("+self.user.username+")"
 
@@ -27,6 +29,7 @@ class ScheduleSettings(models.Model):
     schedule_string = models.CharField(max_length=100000, default=[])
     slot_length = models.IntegerField()
     num_days = models.IntegerField()
+    paper_graph_string = models.TextField(max_length=100000000, default = "[]")
     user = models.ForeignKey(User)
     def __str__(self):
         return self.settings_string
