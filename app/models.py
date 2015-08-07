@@ -24,12 +24,13 @@ class Author(models.Model):
     def __str__(self):
         return self.name+" ("+self.user.username+")"
 
-class ScheduleSettings(models.Model):
-    settings_string = models.CharField(max_length=100000)
-    schedule_string = models.CharField(max_length=100000, default=[])
-    slot_length = models.IntegerField()
-    num_days = models.IntegerField()
-    paper_graph_string = models.TextField(max_length=100000000, default = "[]")
+class Conference(models.Model):
+    title = models.CharField(max_length=1000, default="Unnamed conference")
+    settings_string = models.CharField(max_length=100000, default='[[]]')
+    schedule_string = models.CharField(max_length=100000, default='[[]]')
+    slot_length = models.IntegerField(default=60)
+    num_days = models.IntegerField(default=1)
+    paper_graph_string = models.TextField(max_length=100000000, default = '[]')
     user = models.ForeignKey(User)
     def __str__(self):
         return self.settings_string

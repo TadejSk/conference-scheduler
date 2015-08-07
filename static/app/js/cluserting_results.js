@@ -9,6 +9,10 @@ nv.addGraph(function(){
         console.log(data.point);
         return data.point.title;
     });
+    graph.pointSize(1).pointRange([150,150]);
+    //graph.xAxis.tickFormat(d3.format('.0002f'));
+    //graph.yAxis.tickFormat(d3.format('.0002f'));
+
     var data = getData();
     d3.select('svg')
       .datum(data)
@@ -56,8 +60,10 @@ function getData(){
             max_cluster = clusters[i]
         }
     }
-
+    console.log(coords_x)
+    console.log(coords_y)
     var data = []
+    var curr_start = 0;
     for(var i = 0;i < max_cluster; i++){
         data.push({
             key: 'Cluster ' + i,
@@ -65,12 +71,16 @@ function getData(){
         });
 
         for(var j = 0; j < coords_x.length; j++){
-            data[i].values.push({
-                x: coords_x[j],
-                y: coords_y[j],
-                title: titles[j]
-            })
+            if(clusters[j] == i+1) {
+                console.log("added: " + coords_x[j] + ", " + coords_y[j] + " to " + i)
+                data[i].values.push({
+                    x: coords_x[j]*100,
+                    y: coords_y[j]*100,
+                    title: titles[j],
+                })
+            }
         }
+        curr_start += coords_x.length;
     }
 
     return data;

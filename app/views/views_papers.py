@@ -3,7 +3,7 @@ from django.forms import modelformset_factory
 from django.http import Http404
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-from app.models import Paper, ScheduleSettings
+from app.models import Paper, Conference
 from ..classes import schedule_manager_class
 
 
@@ -37,7 +37,7 @@ def update_paper(request):
 @csrf_exempt
 def add_paper_to_schedule(request):
     set = schedule_manager_class()
-    settings=ScheduleSettings.objects.get(user=request.user)
+    settings=Conference.objects.get(user=request.user, pk=request.session['conf'])
     if settings.schedule_string == "[]":
         set.create_empty_list(settings.settings_string)
     else:
@@ -55,7 +55,7 @@ def add_paper_to_schedule(request):
 @csrf_exempt
 def remove_paper_from_schedule(request):
     set = schedule_manager_class()
-    settings=ScheduleSettings.objects.get(user=request.user)
+    settings=Conference.objects.get(user=request.user, pk=request.session['conf'])
     if settings.schedule_string == "[]":
         set.create_empty_list(settings.settings_string)
     else:

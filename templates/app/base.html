@@ -14,30 +14,37 @@
 </head>
 <body>
 <div class="navbar navbar-default">
-     <div class="container-fluid">
-     <div class="navbar-header">
-         <div class="navbar-brand">
-             <a href = "/app/index/">
-                Manual program
-             </a>
-         </div>
-         <div class="navbar-brand">
-             <a href="/app/settings/schedule" >
-                Schedule
-             </a>
-         </div>
-         <div class="navbar-brand">
-             <a href="/app/clustering/basic" >
-                Automatic scheduling
-             </a>
-         </div>
-     </div>
-         <ul class="nav navbar-nav navbar-right">
-         <li><a class="navbar-brand" href="/app/logout_view">
-              Logout
-         </a></li>
-         </ul>
-     </div>
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <div class="navbar-brand">
+                <a href = "/app/index/">
+                    Manual program
+                </a>
+            </div>
+            <div class="navbar-brand">
+                <a href="/app/settings/schedule" >
+                    Schedule
+                </a>
+            </div>
+            <div class="navbar-brand">
+                <a href="/app/clustering/basic" >
+                    Automatic scheduling
+                </a>
+            </div>
+        </div>
+        <ul class="nav navbar-nav navbar-right">
+            <li>
+                <a class="navbar-brand" href="/app/conference/list" >
+                    Change conference
+                </a>
+            </li>
+            <li>
+                <a class="navbar-brand" href="/app/logout_view">
+                    Logout
+                </a>
+            </li>
+        </ul>
+    </div>
 </div>
 {% block content %}
 

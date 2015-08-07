@@ -1,13 +1,13 @@
 from django.http import Http404
 from django.shortcuts import render, redirect
-from ..models import ScheduleSettings
+from ..models import Conference
 from ..classes import schedule_settings_class, schedule_manager_class
 import ast
 __author__ = 'Tadej'
 
 def schedule_settings(request):
     error = request.session['parallel_error']
-    settings = ScheduleSettings.objects.get(user=request.user)
+    settings = Conference.objects.get(user=request.user, pk=request.session['conf'])
     num_days = None
     base_time = None
     if settings is not None:
@@ -23,14 +23,14 @@ def schedule_settings(request):
 def save_simple_schedule_settings(request):
     num_days = request.POST.get('num_days',None)
     base_time = request.POST.get('base_time',None)
-    if not ScheduleSettings.objects.filter(user=request.user).exists():
-        settings=ScheduleSettings()
+    if not Conference.objects.filter(user=request.user, pk=request.session['conf']).exists():
+        settings=Conference()
         settings.num_days=num_days
         settings.slot_length=base_time
         settings.user=request.user
         settings.save()
     else:
-        settings=ScheduleSettings.objects.get(user=request.user)
+        settings=Conference.objects.get(user=request.user, pk=request.session['conf'])
         settings.num_days=num_days
         settings.slot_length=base_time
         # Update settings string
@@ -50,7 +50,7 @@ def save_simple_schedule_settings(request):
     return redirect('/app/settings/schedule/')
 
 def schedule_add_slot(request):
-    settings_model = ScheduleSettings.objects.get(user=request.user)
+    settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])
     schedule = schedule_manager_class()
     if settings_model.schedule_string == "[]":
         schedule.set_settings(settings_model.settings_string)
@@ -70,7 +70,7 @@ def schedule_add_parallel_slots(request):
     if not request.POST.get('num_slots').isdigit():
         request.session['parallel_error'] = "Enter a valid integer"
         return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
-    settings_model = ScheduleSettings.objects.get(user=request.user)
+    settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
     settings.add_parallel_slots_to_day(int(request.POST.get('day')), settings_model.slot_length,
                                        int(request.POST.get('num_slots')))
@@ -88,7 +88,7 @@ def schedule_add_parallel_slots(request):
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
 def schedule_change_slot_time(request):
-    settings_model = ScheduleSettings.objects.get(user=request.user)
+    settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
     settings.change_slot_time(day=int(request.POST.get('day')), row=int(request.POST.get('row')),
                               col=int(request.POST.get('col')),new_len=int(request.POST.get('len')))
@@ -100,7 +100,7 @@ def delete_slot(request):
     day = int(request.POST.get('day'))
     row = int(request.POST.get('row'))
     col = int(request.POST.get('col'))
-    settings_model = ScheduleSettings.objects.get(user=request.user)
+    settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
     schedule = schedule_manager_class()
     schedule.import_paper_schedule(settings_model.schedule_string)

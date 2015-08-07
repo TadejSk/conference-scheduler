@@ -107,7 +107,6 @@ class Clusterer:
     def get_coords(self):
         pca_data = PCA(n_components=2).fit_transform(self.data.toarray())
         self.cluster_function.fit(pca_data)
-
         print("--------------COORDS------------")
         print(pca_data[:,0])
         print(pca_data[:,1])
@@ -133,6 +132,7 @@ class Clusterer:
             paper.cluster = 0
             paper.save()
         # The following is repeated for every cluster independently
+        # Slot lengths are initialized in __init__
         while self.slot_lengths != []:
             # Get biggest empty slot
             slot_length = 0
@@ -167,13 +167,14 @@ class Clusterer:
             # Also update the papers' cluster field
             ids = [self.papers[i].id for i in papers[selected_index]]
             papers_to_update = [(self.papers[i],i) for i in papers[selected_index]]
+            #print("PAPERS TO UPATE: ", papers_to_update)
             for paper, index in papers_to_update:
                 paper.cluster = self.current_cluster
                 coords = self.slot_coords[slot_index]
                 paper.add_to_day = coords[0]
                 paper.add_to_row = coords[1]
                 paper.add_to_col = coords[2]
-                print("COORD ",  index, self.visual_coords_x[index], self.visual_coords_y[index])
+                #print("COORD ",  index, self.visual_coords_x[index], self.visual_coords_y[index])
                 paper.visul_x = self.visual_coords_x[index]
                 paper.visual_y = self.visual_coords_y[index]
                 paper.save()
@@ -181,11 +182,15 @@ class Clusterer:
             # remove the assigned papers from this class, since they no longer need to be assigned
             for paper, index in papers_to_update:
                 self.papers.remove(paper)
-                np.delete(self.visual_coords_x, index)
-                np.delete(self.visual_coords_y, index)
+                print("LEN ", len(self.visual_coords_x), index)
+                self.visual_coords_x = np.delete(self.visual_coords_x, index)
+                self.visual_coords_y = np.delete(self.visual_coords_y, index)
             # also remove the information about the slot
             del self.slot_lengths[slot_index]
             del self.slot_coords[slot_index]
+            # redo clustering
+            self.create_dataset()
+            self.basic_clustering()
         # Return the cluster coordinates - used for visualization
         self.get_coords()
 

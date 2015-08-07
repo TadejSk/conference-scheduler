@@ -23,4 +23,6 @@ urlpatterns = [
     url(r'^papers/change_lock/', views.lock_paper, name='lock_paper'),
     url(r'^clustering/basic/', views.basic_clustering, name='basic_clustering'),
     url(r'^clustering/results/', views.clustering_results, name='clustering_results'),
+    url(r'^conference/list/', views.conference_list, name='conference_list'),
+    url(r'^conference/create/', views.create_conference, name='create_conference'),
 ]

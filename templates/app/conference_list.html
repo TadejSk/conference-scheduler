@@ -1,0 +1,49 @@
+{% extends "app/base.html" %}
+{% load filters %}
+{% block content %}
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        Conferences
+                    </div>
+                    <div class="panel-body">
+                    {% if num_conferences == 0 %}
+                        You currently have no saved conferences. Use the button below to create one
+                    {% else %}
+                        <ul class="list-group">
+                            {%  for title, id in form_data %}
+                                <li class="list-group-item">
+                                    <form action="{% url 'app:index' %}" method="post">
+                                        {% csrf_token %}
+                                        <input class="hidden" id="conference" name="conference" value="{{id}}"/>
+                                        <button type="submit" class="btn btn-link">{{ title }}</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    </div>
+                    <div class="panel-footer">
+                        <div class="panel-body">
+                            <div class="row-fluid">
+                                <form action="{% url 'app:create_conference' %}" method="post"
+                                    class="form-inline">
+                                    {% csrf_token %}
+                                    <div class="input-group">
+                                        <input type="text" id="title" name="title" class="form-control"
+                                               placeholder="Conference title">
+                                        <span class="input-group-btn">
+                                            <button type="submit" class="btn btn-primary">Create conference</button>
+                                        </span>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

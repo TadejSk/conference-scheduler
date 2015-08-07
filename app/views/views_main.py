@@ -3,21 +3,23 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.shortcuts import render, redirect
 from app.classes import *
-from app.models import ScheduleSettings
+from app.models import Conference
 
 __author__ = 'Tadej'
 
 @login_required
 def index(request):
+    if request.method == 'POST':
+        request.session['conf'] = request.POST.get('conference',0)
     request.session['parallel_error']=""
     # Get the number of all authors and papers
     num_authors = Author.objects.filter(user=request.user).count()
     num_papers = Paper.objects.filter(user=request.user).count()
     # Get the data necessary to display the schedule
     try:
-        settings = ScheduleSettings.objects.get(user=request.user)
+        settings = Conference.objects.get(user=request.user, pk=request.session['conf'])
     except ObjectDoesNotExist:
-        s = ScheduleSettings()
+        s = Conference()
         s.user = request.user
         s.num_days = 1
         s.slot_length = 60
@@ -105,7 +107,7 @@ def import_assignments_data(request):
     data = raw_data(None,path)
     #data.parse_accepted()
     graph_list = data.parse_assignments()
-    settings = ScheduleSettings.objects.get(user = request.user)
+    settings = Conference.objects.get(user = request.user, pk=request.session['conf'])
     settings.paper_graph_string = str(graph_list)
     settings.save()
     return redirect('/app/index')
