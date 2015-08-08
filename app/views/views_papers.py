@@ -29,6 +29,10 @@ def update_paper(request):
         for obj in objs:
             if obj.user_id == None:
                 obj.user_id = request.user.pk
+            if obj.conference_id == None:
+                obj.conference_id = request.session['conf']
+            if obj.submission_id == None:
+                obj.submission_id = 0
             obj.save()
         return redirect('/app/index/')
     else:

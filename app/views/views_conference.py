@@ -6,7 +6,7 @@ __author__ = 'Tadej'
 
 @login_required
 def conference_list(request):
-    conferences = Conference.objects.filter(user=request.user)
+    conferences = Conference.objects.filter(user=request.user).order_by('id')
     form_data = [(c.title,c.id) for c in conferences]
     num_conferences = conferences.count()
     return render(request, 'app/conference_list.html', {'conferences':conferences, 'num_conferences':num_conferences,

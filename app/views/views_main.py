@@ -11,10 +11,14 @@ __author__ = 'Tadej'
 def index(request):
     if request.method == 'POST':
         request.session['conf'] = request.POST.get('conference',0)
+    try:
+        request.session['conf']
+    except KeyError:
+        return redirect('/app/conference/list')
     request.session['parallel_error']=""
     # Get the number of all authors and papers
     num_authors = Author.objects.filter(user=request.user).count()
-    num_papers = Paper.objects.filter(user=request.user).count()
+    num_papers = Paper.objects.filter(user=request.user, conference=request.session['conf']).count()
     # Get the data necessary to display the schedule
     try:
         settings = Conference.objects.get(user=request.user, pk=request.session['conf'])
@@ -39,7 +43,7 @@ def index(request):
     papers_form = FileForm()
     assignments_form = AssignmentsFileForm()
     # Create a list of all the papers that the user has imported/created
-    papers = Paper.objects.filter(user=request.user).order_by('title')
+    papers = Paper.objects.filter(user=request.user, conference=request.session['conf']).order_by('title')
     paper_titles = []
     paper_ids = []
     paper_lengths = []
@@ -73,12 +77,13 @@ def import_data(request):
     data = raw_data(papers_path,None)
     p = data.parse_accepted()
     for paper in p.accepted_papers_list:
-        if not Paper.objects.filter(title=paper.title, user=request.user).exists():
+        if not Paper.objects.filter(title=paper.title, user=request.user, conference=request.session['conf']).exists():
             db_paper = Paper()
             db_paper.title = paper.title
             db_paper.abstract = paper.abstract
             db_paper.submission_id = paper.submission_id
             db_paper.user = request.user
+            db_paper.conference = Conference.objects.get(pk=request.session['conf'])
             db_paper.save()
             for author in paper.authors:
                 if not Author.objects.filter(name=author, user=request.user ).exists():

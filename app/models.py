@@ -5,7 +5,9 @@ class Paper(models.Model):
     title = models.CharField(max_length=1000)
     abstract = models.TextField(max_length=1000000)
     user = models.ForeignKey(User)
+    conference = models.ForeignKey('app.Conference', default=None, null=True)
     cluster = models.IntegerField(default=0)
+    simple_cluster = models.IntegerField(default=0)
     add_to_day = models.IntegerField(default = -1)
     add_to_row = models.IntegerField(default = -1)
     add_to_col = models.IntegerField(default = -1)
@@ -13,6 +15,8 @@ class Paper(models.Model):
     is_locked = models.BooleanField(default=False)
     submission_id = models.IntegerField()   # The id imported from the xls file - used for constructing graphs
     visual_x = models.FloatField(default = 0)
+    simple_visual_x = models.FloatField(default = 0)
+    simple_visual_y = models.FloatField(default = 0)
     visual_y = models.FloatField(default = 0)
     def __str__(self):
         return self.title+" ("+self.user.username+")"

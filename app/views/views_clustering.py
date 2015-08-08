@@ -10,7 +10,7 @@ __author__ = 'Tadej'
 @login_required
 def basic_clustering(request):
     # Select papers for clustering
-    papers = Paper.objects.filter(user=request.user, is_locked=False)
+    papers = Paper.objects.filter(user=request.user, is_locked=False, conference=request.session['conf'])
     schedule = Conference.objects.get(user = request.user, pk=request.session['conf'] ).schedule_string
     schedule = ast.literal_eval(schedule)
     settings = Conference.objects.get(user = request.user, pk=request.session['conf']).settings_string
@@ -29,14 +29,37 @@ def basic_clustering(request):
         if (paper.add_to_day != -1) and (paper.add_to_row != -1) and (paper.add_to_col != -1):
             schedule_manager.assign_paper(paper.pk, paper.add_to_day, paper.add_to_row, paper.add_to_col)
     schedule_settings = Conference.objects.get(user = request.user, pk=request.session['conf'])
+    schedule_settings = Conference.objects.get(user = request.user, pk=request.session['conf'])
     schedule_settings.schedule_string = schedule_manager.papers
     schedule_settings.save()
-    return redirect('/app/clustering/results')
+    return redirect('/app/clustering/results/all')
 
 def clustering_results(request):
+    # This one shows all clusters, even if they were not assigned to a schedule slot as a result of automatic scheduling
     # Get paper info for displaying papers on the result page
-    num_papers = Paper.objects.filter(user=request.user,cluster__gte=1).count()
-    papers = Paper.objects.filter(user=request.user, cluster__gte=1).order_by('cluster')
+    num_papers = Paper.objects.filter(user=request.user,simple_cluster__gte=1, conference=request.session['conf']).count()
+    papers = Paper.objects.filter(user=request.user, simple_cluster__gte=1, conference=request.session['conf']).order_by('cluster')
+    paper_titles = []
+    paper_ids = []
+    paper_clusters = []
+    paper_coords_x = []
+    paper_coords_y = []
+    for paper in papers:
+        paper_titles.append(paper.title)
+        paper_ids.append(paper.pk)
+        paper_clusters.append(paper.simple_cluster)
+        paper_coords_x.append(paper.simple_visual_x)
+        paper_coords_y.append(paper.simple_visual_y)
+    return render(request, 'app/clustering_results.html',
+                  {'num_papers':num_papers, 'paper_titles':paper_titles,
+                   'paper_ids':paper_ids, 'paper_clusters':paper_clusters,
+                   'paper_coords_x':paper_coords_x,
+                   'paper_coords_y':paper_coords_y, 'all':True})
+
+def clustering_results_assigned(request):
+    # This one only shows clusters that were actually assigned to a schedule slot during automatic clustering
+    num_papers = Paper.objects.filter(user=request.user,cluster__gte=1, conference=request.session['conf']).count()
+    papers = Paper.objects.filter(user=request.user, cluster__gte=1, conference=request.session['conf']).order_by('cluster')
     paper_titles = []
     paper_ids = []
     paper_clusters = []
@@ -52,4 +75,4 @@ def clustering_results(request):
                   {'num_papers':num_papers, 'paper_titles':paper_titles,
                    'paper_ids':paper_ids, 'paper_clusters':paper_clusters,
                    'paper_coords_x':paper_coords_x,
-                   'paper_coords_y':paper_coords_y})
+                   'paper_coords_y':paper_coords_y, 'all':False})
