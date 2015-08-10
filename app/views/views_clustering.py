@@ -15,10 +15,36 @@ def basic_clustering(request):
     schedule = ast.literal_eval(schedule)
     settings = Conference.objects.get(user = request.user, pk=request.session['conf']).settings_string
     settings = ast.literal_eval(settings)
+    # Before clustering, every non-locked paper must be removed from schedule, since the clustering algorithm currently
+    # only works with empty slots.
+    ids_to_remove = []
+    for day in schedule:
+        for row in day:
+            for col in row:
+                print("GOT COL: ", col)
+                for id in col:
+                    paper = Paper.objects.get(pk=id)
+                    print("ID ", id)
+                    if not paper.is_locked:
+                        ids_to_remove.append(id)
+                        print("REMOVED ", id, "COL IS NOW ", col)
+    schedule_db = Conference.objects.get(user = request.user, pk=request.session['conf'] )
+    schedule_manager = schedule_manager_class()
+    schedule_manager.import_paper_schedule(schedule_db.schedule_string)
+    for id in ids_to_remove:
+        print(schedule_manager.papers)
+        schedule_manager.remove_paper(id)
+    print(schedule_manager.papers)
+    schedule_db.schedule_string = str(schedule_manager.papers)
+    schedule_db.save()
+    # Begin clustering, after reloading new schedule data
+    schedule = Conference.objects.get(user = request.user, pk=request.session['conf'] ).schedule_string
+    schedule = ast.literal_eval(schedule)
+    print(schedule)
     clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings)
     clusterer.create_dataset()
     clusterer.basic_clustering()
-    clusterer.fit_to_schedule()
+    clusterer.fit_to_schedule2()
     # Add papers to schedule
     schedule = Conference.objects.get(user = request.user, pk=request.session['conf']).schedule_string
     settings = Conference.objects.get(user = request.user, pk=request.session['conf']).settings_string
