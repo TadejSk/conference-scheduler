@@ -14,7 +14,7 @@ def view_paper(request):
     if id != 0:
         if Paper.objects.get(pk=id).user_id != request.user.pk:
             raise Http404("The selected view does not exist")
-    PaperFormSet = modelformset_factory(Paper,extra=1,max_num=1, fields=('title', 'abstract', 'length'))
+    PaperFormSet = modelformset_factory(Paper,extra=1,max_num=1, fields=('title', 'abstract', 'length'), can_delete=True)
     paper_id = request.GET.get('id', 0)
     formset = PaperFormSet(queryset=Paper.objects.filter(pk=paper_id))
     for form in formset:
@@ -23,9 +23,29 @@ def view_paper(request):
 
 def update_paper(request):
     if request.method == "POST":
-        PaperFormSet = modelformset_factory(Paper,extra=0, fields=('title', 'abstract', 'length'))
+        PaperFormSet = modelformset_factory(Paper,extra=0, fields=('title', 'abstract', 'length'), can_delete=True)
         formset = PaperFormSet(request.POST, request.FILES)
+        for form in formset:
+            form.is_valid()
         objs = formset.save(commit=False)
+        for to_delete in formset.deleted_objects:
+            # Remove paper from schedule
+            set = schedule_manager_class()
+            settings=Conference.objects.get(user=request.user, pk=request.session['conf'])
+            if settings.schedule_string == "[]":
+                set.create_empty_list(settings.settings_string)
+            else:
+                set.import_paper_schedule(settings.schedule_string)
+            id = to_delete.id
+            # Since papers not in schedule do not display if they are locked, they should be unlocked when removed from schedule
+            paper = Paper.objects.get(pk=id)
+            paper.is_locked = False
+            paper.save()
+            set.remove_paper(id)
+            settings.schedule_string = str(set.papers)
+            settings.save()
+            to_delete.delete()
+            return redirect('/app/index/')
         for obj in objs:
             if obj.user_id == None:
                 obj.user_id = request.user.pk

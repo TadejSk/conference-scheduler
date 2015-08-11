@@ -12,17 +12,26 @@
                     {% if num_conferences == 0 %}
                         You currently have no saved conferences. Use the button below to create one
                     {% else %}
-                        <ul class="list-group">
-                            {%  for title, id in form_data %}
-                                <li class="list-group-item">
-                                    <form action="{% url 'app:index' %}" method="post">
-                                        {% csrf_token %}
-                                        <input class="hidden" id="conference" name="conference" value="{{id}}"/>
-                                        <button type="submit" class="btn btn-link">{{ title }}</button>
-                                    </form>
-                                </li>
-                            {% endfor %}
-                        </ul>
+                        {%  for title, id in form_data %}
+                            <div class="list-group-item">
+                                <div class="row">
+                                    <div class="col-xs-10">
+                                        <form class="form-inline" action="{% url 'app:index' %}" method="post">
+                                            {% csrf_token %}
+                                            <input class="hidden" id="conference" name="conference" value="{{id}}"/>
+                                            <button type="submit" class="btn btn-link">{{ title }}</button>
+                                        </form>
+                                    </div>
+                                    <div class="col-xs-2">
+                                        <form class="form-inline" action="{% url 'app:delete_conference' %}" method="post">
+                                            {% csrf_token %}
+                                            <input class="hidden" id="conference" name="conference" value="{{id}}"/>
+                                            <button type="submit" class="btn btn-danger">Delete conference</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
                     {% endif %}
                     </div>
                     <div class="panel-footer">

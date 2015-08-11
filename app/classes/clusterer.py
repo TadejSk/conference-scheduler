@@ -42,41 +42,34 @@ class Clusterer:
     """
     papers = []
     data = []
-    #cluster_distances = []
-    #cluster_values = []
     schedule = []
     schedule_settings = []
     slots = []
-    #slot_lengths = []
-    #parallel_slots = [] # Describes if a slot is parallel (True) or not (False)
-    #slot_coords = []
     current_cluster = 1
     cluster_function = None
     first_clustering = True
-    #visual_coords_x = []
-    #visual_coords_y = []
+    num_clusters = 6
     def __init__(self, papers: list, schedule: list, schedule_settings: list):
         self.papers = []
         self.data = []
-        #self.cluster_distances = []
         self.schedule = []
         self.schedule_settings = []
-        #self.num_slots = 0
-        #self.slot_lengths = []
-        #self.slot_coords = []
         self.current_cluster = 1
+        self.num_clusters = 6
         self.add_papers(papers)
         self.schedule = schedule
         self.schedule_settings = schedule_settings
         self.first_clustering = True
         self.get_slots()
-        #self.find_papers_with_sum(self.papers,[],180,0,result)
-        self.cluster_function = KMeans(n_clusters=6)
-        #self.visual_coords_x = []
-        #self.visual_coords_y = []
+        # Needed, since clustering cannot be performed if n_samples < n_clusters
+        self.set_cluster_function()
         pass
 
-
+    def set_cluster_function(self):
+        if len(self.papers) < self.num_clusters:
+            print("PAPERLEN :", len(self.papers))
+            self.num_clusters = len(self.papers)
+        self.cluster_function = KMeans(n_clusters=self.num_clusters)
     def add_papers(self, papers: list):
         for paper in papers:
             paper_to_add = ClusterPaper(paper)
@@ -176,13 +169,17 @@ class Clusterer:
             self.find_papers_with_sum(set, subset + [set[i]], desired_sum, i+1, result)
 
     def get_coords(self):
-        pca_data = PCA(n_components=2).fit_transform(self.data.toarray())
-        self.cluster_function.fit(pca_data)
-        print("--------------COORDS------------")
-        print(pca_data[:,0])
-        print(pca_data[:,1])
-        visual_coords_x = pca_data[:,0]
-        visual_coords_y =  pca_data[:,1]
+        if(len(self.papers) == 1):
+            visual_coords_x = [0]
+            visual_coords_y =  [0]
+        else:
+            pca_data = PCA(n_components=2).fit_transform(self.data.toarray())
+            self.cluster_function.fit(pca_data)
+            print("--------------COORDS------------")
+            print(pca_data[:,0])
+            print(pca_data[:,1])
+            visual_coords_x = pca_data[:,0]
+            visual_coords_y =  pca_data[:,1]
         for index, x in enumerate(visual_coords_x):
             self.papers[index].coord_x = x
         for index, y in enumerate(visual_coords_y):
@@ -193,7 +190,15 @@ class Clusterer:
                 paper.paper.simple_visual_x = paper.coord_x
                 paper.paper.simple_visual_y = paper.coord_y
                 paper.paper.save()
+                self.first_clustering = False
 
+    def reset_papers(self):
+        for paper in self.papers:
+            paper.paper.add_to_day = -1
+            paper.paper.add_to_row = -1
+            paper.paper.add_to_col = -1
+            paper.paper.cluster = 0
+            paper.paper.save()
     def fit_to_schedule(self):
         """
         Assigns papers to clusters based on the self.cluster_distances obtained from the basic_clustering function
@@ -236,6 +241,10 @@ class Clusterer:
             print("SLOT LEN:", slot_length)
             self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
             if papers == []:
+                # This happens when there are no papers, that can completely fill a slot in the largest cluster.
+                # In this case, it makes sense to rerun clustering with less clusters, as that should produce clusters
+                #   with more papers.
+                # If even that doesnt help, then the function should end end report this to the user
                 print("NO SUITABLE COMBINATION FOUND")
             else:
                 # if there are multiple fitting groups in the same cluster, select the group with the smallest error
@@ -301,16 +310,9 @@ class Clusterer:
                 cluster centroids of such clusters should be as far away as possible
             5.) Repeat untill all slots are filled
         """
-        # Every paper should first have it's cluster and add_to_X fields reset
-        for paper in self.papers:
-            paper.paper.add_to_day = -1
-            paper.paper.add_to_row = -1
-            paper.paper.add_to_col = -1
-            paper.paper.cluster = 0
-            paper.paper.save()
-        previous_clusters = []
         # The following is repeated for every cluster independently
         # Slot lengths are initialized in __init__
+        previous_clusters = []  # Used when picking clusters for parallel slots
         while self.slots != []:
             do_break = False
             # Get biggest empty slot - only select parallel slots once all non-parallel slots have already been filled
@@ -370,7 +372,21 @@ class Clusterer:
             print("SLOT LEN:", slot_length)
             self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
             if papers == []:
-                print("NO SUITABLE COMBINATION FOUND")
+                # This happens when there are no papers, that can completely fill a slot in the largest cluster.
+                # In this case, it makes sense to rerun clustering with less clusters, as that should produce clusters
+                #   with more papers.
+                # If even that doesnt help, then the function should end end report this to the user
+                if self.num_clusters == 1:
+                    return False
+                else:
+                    # Needed, since clustering cannot be performed if n_samples < n_clusters
+                    self.num_clusters -= 1
+                    self.set_cluster_function()
+                    self.create_dataset()
+                    print("DATALEN: ",len(self.data))
+                    self.basic_clustering()
+                    print("NO SUITABLE COMBINATION FOUND2")
+                    return self.fit_to_schedule()
             else:
                 # if there are multiple fitting groups in the same cluster, select the group with the smallest error
                 selected_index = 0
@@ -414,6 +430,7 @@ class Clusterer:
             else:
                 del self.slots[slot_index].sub_slots[0]
             # redo clustering
+            self.set_cluster_function()
             self.create_dataset()
             self.basic_clustering()
         # Return the cluster coordinates - used for visualization

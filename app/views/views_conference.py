@@ -17,5 +17,13 @@ def create_conference(request):
     conference = Conference()
     conference.user = request.user
     conference.title = request.POST.get('title', 'Unnamed conference')
+    if conference.title == '':
+        conference.title = 'Unnamed conference'
     conference.save()
+    return redirect('/app/conference/list')
+
+@login_required
+def delete_conference(request):
+    conference = Conference.objects.get(pk=request.POST.get('conference', None), user=request.user)
+    conference.delete()
     return redirect('/app/conference/list')

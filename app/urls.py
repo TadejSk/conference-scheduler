@@ -26,4 +26,5 @@ urlpatterns = [
     url(r'^clustering/results/assigned', views.clustering_results_assigned, name='clustering_results_assigned'),
     url(r'^conference/list/', views.conference_list, name='conference_list'),
     url(r'^conference/create/', views.create_conference, name='create_conference'),
+    url(r'^conference/delete/', views.delete_conference, name='delete_conference'),
 ]
