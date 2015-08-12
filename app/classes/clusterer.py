@@ -55,8 +55,9 @@ class Clusterer:
         self.schedule = []
         self.schedule_settings = []
         self.current_cluster = 1
-        self.num_clusters = 6
+        self.num_clusters = 12
         self.add_papers(papers)
+        self.reset_papers()
         self.schedule = schedule
         self.schedule_settings = schedule_settings
         self.first_clustering = True
@@ -67,7 +68,6 @@ class Clusterer:
 
     def set_cluster_function(self):
         if len(self.papers) < self.num_clusters:
-            print("PAPERLEN :", len(self.papers))
             self.num_clusters = len(self.papers)
         self.cluster_function = KMeans(n_clusters=self.num_clusters)
     def add_papers(self, papers: list):
@@ -96,7 +96,6 @@ class Clusterer:
                             sub_slot = ClusterSlot()
                             sub_slot.length = self.schedule_settings[d][r][c]
                             sub_slot.coords = [d,r,c]
-                            print("COORDS TO ADDP ", sub_slot.coords)
                             sub_slot.is_parallel = is_parallel
                             parent_slot.is_parallel = True
                             parent_slot.sub_slots.append(sub_slot)
@@ -111,7 +110,6 @@ class Clusterer:
                             slot_to_add = ClusterSlot()
                             slot_to_add.length = self.schedule_settings[d][r][c]
                             slot_to_add.coords = [d,r,c]
-                            print("COORDS TO ADD ", slot_to_add.coords)
                             slot_to_add.is_parallel = is_parallel
                             self.slots.append(slot_to_add)
 
@@ -134,13 +132,14 @@ class Clusterer:
         self.data_list = []
         abstracts = []
         for paper in self.papers:
-            abstracts.append(paper.paper.abstract)
+            abstracts.append(paper.paper.title)
         count_vectorizer = CountVectorizer()
         abstract_count = count_vectorizer.fit_transform(abstracts)
         tfid_transformer = TfidfTransformer()
         abstract_tfid = tfid_transformer.fit_transform(abstract_count)
+        #print(count_vectorizer.get_feature_names())
+        #print(abstract_tfid)
         self.data = abstract_tfid
-
 
     def basic_clustering(self):
         cluster_distances = self.cluster_function.fit_transform(self.data)
@@ -148,7 +147,11 @@ class Clusterer:
         for index,distance in enumerate(cluster_distances):
             self.papers[index].cluster_distances = distance
         for index,value in enumerate(cluster_values):
+            print("added cluster ", value)
             self.papers[index].cluster = value
+        # Assign basic clusters to papers
+        for paper in self.papers:
+            paper.paper.simple_cluster = paper.cluster
         # Get coordinates for visualization
         self.get_coords()
         #for i in range(0,len(self.cluster_distances)):
@@ -159,7 +162,6 @@ class Clusterer:
         if sum(lens) == desired_sum:
             indexes = []
             for paper in subset:
-                print(paper.paper.title)
                 indexes.append(self.papers.index(paper))
             result.append(indexes)
             return
@@ -173,6 +175,7 @@ class Clusterer:
             visual_coords_x = [0]
             visual_coords_y =  [0]
         else:
+            self.create_dataset()
             pca_data = PCA(n_components=2).fit_transform(self.data.toarray())
             self.cluster_function.fit(pca_data)
             print("--------------COORDS------------")
@@ -185,8 +188,10 @@ class Clusterer:
         for index, y in enumerate(visual_coords_y):
             self.papers[index].coord_y = y
         if self.first_clustering == True:
+            print("simple clustering")
             for paper in self.papers:
-                paper.paper.simple_cluster = paper.cluster
+                print("cluster: ", paper.paper.cluster)
+                #paper.paper.simple_cluster = paper.paper.cluster
                 paper.paper.simple_visual_x = paper.coord_x
                 paper.paper.simple_visual_y = paper.coord_y
                 paper.paper.save()
@@ -198,107 +203,8 @@ class Clusterer:
             paper.paper.add_to_row = -1
             paper.paper.add_to_col = -1
             paper.paper.cluster = 0
+            paper.paper.simple_cluster = 0
             paper.paper.save()
-    def fit_to_schedule(self):
-        """
-        Assigns papers to clusters based on the self.cluster_distances obtained from the basic_clustering function
-        Uses an iterative approach, where the biggest empty slot on the schedule is filled first, followed by the next
-        biggest one, and so on until is no more papers that fit in the remaing empty time
-
-        Possible imporovements:
-            Should clustering be rerun after every slot is filled?
-            Is there a better clustering algorithm?
-            Is this iterative aproach even a good idea?
-        """
-        # Every paper should first have it's cluster and add_to_X fields reset
-        self.slots = []
-        self.simple_get_slots()
-        for paper in self.papers:
-            paper.paper.add_to_day = -1
-            paper.paper.add_to_row = -1
-            paper.paper.add_to_col = -1
-            paper.paper.cluster = 0
-            paper.paper.save()
-        # The following is repeated for every cluster independently
-        # Slot lengths are initialized in __init__
-        while self.slots != []:
-            # Get biggest empty slot
-            slot_length = 0
-            slot_index = 0
-            for index,slot in enumerate(self.slots):
-                if slot.length > slot_length:
-                    slot_length = slot.length
-                    slot_index = index
-            # Select biggest cluster
-            cluster_values = [paper.cluster for paper in self.papers]
-            cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.slots))]
-            max_cluster = cluster_sizes.index(max(cluster_sizes))
-            # Get papers from that cluster
-            cluster_papers = [p for p in self.papers if p.cluster == max_cluster]
-            # Select papers that fit into the slot
-            papers = []
-            print("CLUSTER PAPERS:", cluster_papers)
-            print("SLOT LEN:", slot_length)
-            self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
-            if papers == []:
-                # This happens when there are no papers, that can completely fill a slot in the largest cluster.
-                # In this case, it makes sense to rerun clustering with less clusters, as that should produce clusters
-                #   with more papers.
-                # If even that doesnt help, then the function should end end report this to the user
-                print("NO SUITABLE COMBINATION FOUND")
-            else:
-                # if there are multiple fitting groups in the same cluster, select the group with the smallest error
-                selected_index = 0
-                if len(papers) > 1:
-                    min_error = 9999999999999
-                    for index,subset in enumerate(papers):
-                        error = 0
-                        for paper in subset:
-                            error += self.papers[paper].cluster_distances[max_cluster]*self.papers[paper].cluster_distances[max_cluster]
-                        if error < min_error:
-                            selected_index = index
-                            min_error = error
-            # Update the papers' add_to_day/row/col fields. This fields will then be used to add the papers into the schedule
-            # Also update the papers' cluster field
-            ids = [self.papers[i].paper.id for i in papers[selected_index]]
-            papers_to_update = [(self.papers[i],i) for i in papers[selected_index]]
-            #print("PAPERS TO UPATE: ", papers_to_update)
-            for paper, index in papers_to_update:
-                paper.paper.cluster = self.current_cluster
-                coords = self.slots[slot_index].coords
-                paper.paper.add_to_day = coords[0]
-                paper.paper.add_to_row = coords[1]
-                paper.paper.add_to_col = coords[2]
-                #print("COORD ",  index, self.visual_coords_x[index], self.visual_coords_y[index])
-                paper.paper.visul_x = paper.coord_x
-                paper.paper.visual_y = paper.coord_y
-                paper.paper.save()
-            self.current_cluster += 1
-            # remove the assigned papers from this class, since they no longer need to be assigned
-            for paper, index in papers_to_update:
-                self.papers.remove(paper)
-            # also remove the information about the slot
-            del self.slots[slot_index]
-            # redo clustering
-            self.create_dataset()
-            self.basic_clustering()
-        # Return the cluster coordinates - used for visualization
-        self.get_coords()
-
-        """
-        for max_time in self.slot_lengths:
-            m = [[-1] * (max_time+1)] * self.num_clusters
-            for i in range(0, max_time+1):
-                m[0][i] = 0
-            for i in range(0, self.num_clusters):
-                for w in range(0, max_time+1):
-                    if self.papers[i].length > w:
-                        m[i][w] = m[i-1][w]
-                    else:
-                        m[i][w] = max(m[i-1][w], m[i-1][w-self.papers[i].length] + self.cluster_distances[i][0])
-            print("MAX:", m[self.num_clusters-1][max_time])
-        """
-
 
     def fit_to_schedule2(self):
         """
@@ -383,10 +289,10 @@ class Clusterer:
                     self.num_clusters -= 1
                     self.set_cluster_function()
                     self.create_dataset()
-                    print("DATALEN: ",len(self.data))
+                    print("DATALEN: ",self.data.getnnz())
                     self.basic_clustering()
                     print("NO SUITABLE COMBINATION FOUND2")
-                    return self.fit_to_schedule()
+                    return self.fit_to_schedule2()
             else:
                 # if there are multiple fitting groups in the same cluster, select the group with the smallest error
                 selected_index = 0
@@ -405,19 +311,18 @@ class Clusterer:
             ids = [self.papers[i].paper.id for i in papers[selected_index]]
             papers_to_update = [(self.papers[i],i) for i in papers[selected_index]]
             #print("PAPERS TO UPATE: ", papers_to_update)
+            # Return the cluster coordinates - used for visualization
             for paper, index in papers_to_update:
                 paper.paper.cluster = self.current_cluster
                 if not self.slots[slot_index].is_parallel:
                     coords = self.slots[slot_index].coords
-                    print("COORDS: ", coords)
                 else:
                     coords = sub_slot.coords
-                    print("COORDSP: ", coords)
                 paper.paper.add_to_day = coords[0]
                 paper.paper.add_to_row = coords[1]
                 paper.paper.add_to_col = coords[2]
                 #print("COORD ",  index, self.visual_coords_x[index], self.visual_coords_y[index])
-                paper.paper.visul_x = paper.coord_x
+                paper.paper.visual_x = paper.coord_x
                 paper.paper.visual_y = paper.coord_y
                 paper.paper.save()
             self.current_cluster += 1
@@ -430,8 +335,6 @@ class Clusterer:
             else:
                 del self.slots[slot_index].sub_slots[0]
             # redo clustering
-            self.set_cluster_function()
-            self.create_dataset()
-            self.basic_clustering()
-        # Return the cluster coordinates - used for visualization
-        self.get_coords()
+            #self.set_cluster_function()
+            #self.create_dataset()
+            #self.basic_clustering()

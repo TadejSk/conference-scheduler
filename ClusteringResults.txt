@@ -1,0 +1,8 @@
+1.) Samo tf-idf abstracta
+    Izgleda precej slabo - vsakič vrne skoraj naključne rezultate
+    Atleast seems to work for very obvious examples (A paper with text a aa aaa aa aa a aaa bb bbb is not grouped with a paper
+    with text b bbb bb bb bbb bbb bb aa aaa)
+    Mogoče celo ni tako slabo - v slot s tremi mesti je postavilo skupaj vse 3 članke z SNOMED CT v naslovu - problem tukaj
+    je, da v dejanski konferenci te članki niso skupaj
+
+2.) Samo tf-idf naslova
