@@ -42,6 +42,8 @@ def basic_clustering(request):
     schedule = ast.literal_eval(schedule)
     print(schedule)
     clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings)
+    # Try with graph - TODO:: make this optional through a clustering settings page
+    clusterer.add_graph(schedule_db.paper_graph_string)
     clusterer.create_dataset()
     clusterer.basic_clustering()
     clusterer.fit_to_schedule2()
@@ -54,7 +56,6 @@ def basic_clustering(request):
     for paper in papers:
         if (paper.add_to_day != -1) and (paper.add_to_row != -1) and (paper.add_to_col != -1):
             schedule_manager.assign_paper(paper.pk, paper.add_to_day, paper.add_to_row, paper.add_to_col)
-    schedule_settings = Conference.objects.get(user = request.user, pk=request.session['conf'])
     schedule_settings = Conference.objects.get(user = request.user, pk=request.session['conf'])
     schedule_settings.schedule_string = schedule_manager.papers
     schedule_settings.save()

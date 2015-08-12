@@ -117,3 +117,16 @@ def import_assignments_data(request):
     settings.save()
     return redirect('/app/index')
 
+"""
+def check_graph_validity(graph_list, papers):
+    for connection in graph_list:
+        graph_id = connection[0]
+        ok = False
+        for paper in papers:
+            if graph_id == paper.submission_id:
+                ok = True
+                break
+        if ok == False:
+            return False
+    return True
+"""
