@@ -7,6 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+import scipy.sparse
 import numpy as np
 
 class PaperGraph(object):
@@ -26,8 +27,11 @@ class PaperGraph(object):
         total_weights = {}
         nodes = []
         prob_matrix = []
+        damping_factor = 0.85
+        num_iterations = 20
         def __init__(self):
             #self.nodes = papers
+            self.nodes = []
             self.connections = []
 
         def add_node(self, paper):
@@ -76,28 +80,55 @@ class PaperGraph(object):
                     if nodei == nodej:
                         probs.append(0)
                     else:
-                        if self.total_weights[nodej] == 0:
+                        if self.total_weights[nodei] == 0:
                             probs.append(0)     # Unconnected nodes would otherwise result in division by 0
                         else:
-                            probs.append(self.connection_weight(nodei, nodej)/self.total_weights[nodej])
+                            probs.append(self.connection_weight(nodei, nodej)/self.total_weights[nodei])
                 self.prob_matrix.append(probs)
-            print("MATRIX: ")
-            print(self.prob_matrix)
-            print("Sum probs")
-            print(self.connections)
+            #print("MATRIX: ")
+            #print(self.prob_matrix)
+            self.prob_matrix = np.array(self.prob_matrix)
+            """
             for i in self.nodes:
                 print(i, self.total_weights[i])
             for i in self.prob_matrix:
                 print(sum(i))
+            """
         def get_pr(self, start):
             """
             The pagerank of all papers will be stored in a vector PR[]
                 PR[i] = pagerank of i
+            Initial PR[i] is defined as 1/N, where N is the number of nodes in a graph (in this case the number of papers)
             The matrix M is the adjencency matrix, and Mij is defined as probability of reaching i from j
             E is a vector of zeroes, except for the value matching the starting node, where it is one
             We can then calculate PR as:
                 PR' = (1-d)*E + d*M*PR
             """
+            # Probability matrix is stored in self.prob_matrix
+            # Isolated nodes (nodes with no connections) need to be treated seperately, since by normal calculation
+            #   their pagerank does not sum to 1
+            PR = []
+            E = []
+            row = 0
+            for index, node in enumerate(self.nodes):
+                if node == start:
+                    E.append(1)
+                    PR.append(1)
+                    row = index
+                else:
+                    E.append(0)
+                    PR.append(0)
+            if sum(self.prob_matrix.tolist()[row]) < 0.1:
+                return np.array(PR)
+            #for none in self.nodes:
+            #    PR.append(1/len(self.nodes))
+            PR = np.array(PR)
+            E = np.array(E)
+            for iteration in range(1,self.num_iterations):
+                PR = E*(1-self.damping_factor) + ((self.damping_factor) * np.transpose(self.prob_matrix).dot(PR))
+            return PR
+
+
 class ClusterPaper:
     cluster_distances = []
     coord_x = 0
@@ -141,6 +172,8 @@ class Clusterer:
     cluster_function = None
     first_clustering = True
     num_clusters = 6
+    graph_dataset = None
+    using_graph_data = False
     def __init__(self, papers: list, schedule: list, schedule_settings: list):
         self.papers = []
         self.data = []
@@ -148,6 +181,7 @@ class Clusterer:
         self.schedule_settings = []
         self.current_cluster = 1
         self.num_clusters = 12
+        self.graph_dataset = None
         self.add_papers(papers)
         self.reset_papers()
         self.schedule = schedule
@@ -172,11 +206,17 @@ class Clusterer:
         self.schedule_settings = schedule_settings
 
     def add_graph(self, con_str):
+        """
+        Constructs a graph based on the papers currently in the class, and a string describing connections in the graph.
+        The graph is stored in self.paper_graph.
+        On top of that, a dataset created from the graph is stored in self.graph_dataset
+        :param con_str: string
+        :return: None
+        """
         con_list = ast.literal_eval(con_str)
         self.paper_graph = PaperGraph()
         # First, add paper ids as nodes
         for paper in self.papers:
-            print("Added paper ", paper.paper.id)
             self.paper_graph.add_node(paper.paper.id)
         # Then add connections
         for con in con_list:
@@ -200,7 +240,17 @@ class Clusterer:
             if found1 == True and found2 == True:
                 self.paper_graph.add_connection(id1, id2, weight)
         # Create a probability matrix
+        #
         self.paper_graph.create_probability_matrix()
+        print(self.paper_graph.prob_matrix[0])
+        print(self.paper_graph.nodes[0])
+        print("sums")
+        graph_dataset = []
+        for node in self.paper_graph.nodes:
+            pr = self.paper_graph.get_pr(node)
+            print(pr.tolist())
+            graph_dataset.append(pr.tolist())
+        self.graph_dataset = graph_dataset
 
     def get_slots(self):
         """
@@ -257,21 +307,27 @@ class Clusterer:
         abstracts = []
         for paper in self.papers:
             abstracts.append(paper.paper.title)
-        count_vectorizer = CountVectorizer()
-        abstract_count = count_vectorizer.fit_transform(abstracts)
-        tfid_transformer = TfidfTransformer()
-        abstract_tfid = tfid_transformer.fit_transform(abstract_count)
-        #print(count_vectorizer.get_feature_names())
-        #print(abstract_tfid)
-        self.data = abstract_tfid
+        if self.graph_dataset == None:
+            count_vectorizer = CountVectorizer()
+            abstract_count = count_vectorizer.fit_transform(abstracts)
+            tfid_transformer = TfidfTransformer()
+            abstract_tfid = tfid_transformer.fit_transform(abstract_count)
+            self.data = abstract_tfid
+            print("TYPE: ",type(self.data))
+            self.using_graph_data = False
+        else:
+            print("using graph data")
+            self.data = np.matrix(self.graph_dataset)
+            self.using_graph_data = True
 
     def basic_clustering(self):
+        print("LEN ",len(self.data))
         cluster_distances = self.cluster_function.fit_transform(self.data)
         cluster_values = self.cluster_function.fit_predict(self.data).tolist()
+        print("ERROR ", len(self.papers), len(cluster_distances))
         for index,distance in enumerate(cluster_distances):
             self.papers[index].cluster_distances = distance
         for index,value in enumerate(cluster_values):
-            print("added cluster ", value)
             self.papers[index].cluster = value
         # Assign basic clusters to papers
         for paper in self.papers:
@@ -300,11 +356,15 @@ class Clusterer:
             visual_coords_y =  [0]
         else:
             self.create_dataset()
-            pca_data = PCA(n_components=2).fit_transform(self.data.toarray())
+            if scipy.sparse.issparse(self.data):
+                data = self.data.toarray()
+            else:
+                data = self.data
+            pca_data = PCA(n_components=2).fit_transform(data)
             self.cluster_function.fit(pca_data)
-            print("--------------COORDS------------")
-            print(pca_data[:,0])
-            print(pca_data[:,1])
+            #print("--------------COORDS------------")
+            #print(pca_data[:,0])
+            #print(pca_data[:,1])
             visual_coords_x = pca_data[:,0]
             visual_coords_y =  pca_data[:,1]
         for index, x in enumerate(visual_coords_x):
@@ -312,9 +372,7 @@ class Clusterer:
         for index, y in enumerate(visual_coords_y):
             self.papers[index].coord_y = y
         if self.first_clustering == True:
-            print("simple clustering")
             for paper in self.papers:
-                print("cluster: ", paper.paper.cluster)
                 #paper.paper.simple_cluster = paper.paper.cluster
                 paper.paper.simple_visual_x = paper.coord_x
                 paper.paper.simple_visual_y = paper.coord_y
@@ -398,8 +456,6 @@ class Clusterer:
             # be filled whith papers from different clusters
             # Select papers that fit into the slot
             papers = []
-            print("CLUSTER PAPERS:", cluster_papers)
-            print("SLOT LEN:", slot_length)
             self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
             if papers == []:
                 # This happens when there are no papers, that can completely fill a slot in the largest cluster.
@@ -413,7 +469,6 @@ class Clusterer:
                     self.num_clusters -= 1
                     self.set_cluster_function()
                     self.create_dataset()
-                    print("DATALEN: ",self.data.getnnz())
                     self.basic_clustering()
                     print("NO SUITABLE COMBINATION FOUND2")
                     return self.fit_to_schedule2()
@@ -431,7 +486,6 @@ class Clusterer:
                             min_error = error
             # Update the papers' add_to_day/row/col fields. This fields will then be used to add the papers into the schedule
             # Also update the papers' cluster field
-            print(papers[selected_index])
             ids = [self.papers[i].paper.id for i in papers[selected_index]]
             papers_to_update = [(self.papers[i],i) for i in papers[selected_index]]
             #print("PAPERS TO UPATE: ", papers_to_update)
@@ -451,8 +505,16 @@ class Clusterer:
                 paper.paper.save()
             self.current_cluster += 1
             # remove the assigned papers from this class, since they no longer need to be assigned
+            offset = 0
             for paper, index in papers_to_update:
+                print("INDEX ", index)
                 self.papers.remove(paper)
+                # Remove the relevant line from graph dataset
+                if self.using_graph_data == True:
+                    graph = len(self.graph_dataset)
+                    del self.graph_dataset[index - offset]
+                    # since indexes are sorted in asending order, they must be updated, which is handled by offset
+                    offset += 1
             # also remove the information about the slot
             if not self.slots[slot_index].is_parallel:
                 del self.slots[slot_index]

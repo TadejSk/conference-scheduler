@@ -6,3 +6,10 @@
     je, da v dejanski konferenci te članki niso skupaj
 
 2.) Samo tf-idf naslova
+    Zelo podobno kot samo z tf-idf abstracta
+
+3.) Samo z podatki iz grafa
+    To pa dejansko izgleda dokaj dobro - dva velika slota napolni z članki, ki več kot 50% ustrezajo postavitvi člankov
+    na dejanski konferenci. Tudi vizualizacija izgleda zelo vredu.
+    Problem je z manjšimi članki, kar verjetno ni problem clusteringa samega, ampak bolj problem iterativnega algoritma
+    za razporejanje člankov v urnik
