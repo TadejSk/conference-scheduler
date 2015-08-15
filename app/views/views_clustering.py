@@ -7,6 +7,39 @@ from ..classes.schedule_manager import schedule_manager_class
 
 __author__ = 'Tadej'
 
+def setup_clustering(request):
+    # initialize clustering
+    papers = Paper.objects.filter(user=request.user, is_locked=False, conference=request.session['conf'])
+    settings = Conference.objects.get(user = request.user, pk=request.session['conf']).settings_string
+    settings = ast.literal_eval(settings)
+    schedule_db = Conference.objects.get(user = request.user, pk=request.session['conf'] )
+    schedule = ast.literal_eval(schedule_db.schedule_string)
+    clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings, func=request.POST.get('method', ""))
+    num_cl = request.POST.get('num_clusters', False)
+    if num_cl != False:
+        if num_cl == '':
+            clusterer.num_clusters = 10
+        else:
+            clusterer.num_clusters = int(num_cl)
+    clusterer.set_cluster_function(request.POST.get('method', ""))
+    if request.POST.get('useabstracts',False):
+        clusterer.using_abstracts = True
+    else:
+        clusterer.using_abstracts = False
+    if request.POST.get('usetitles',False):
+        clusterer.using_titles = True
+    else:
+        clusterer.using_titles = False
+    if request.POST.get('assign',False):
+        clusterer.using_graph_data = True
+    else:
+        clusterer.graph_dataset = False
+    vocab_string = request.POST.get('keywords', '')
+    clusterer.set_custom_vocabulary(vocab_string)
+    clusterer.add_graph(schedule_db.paper_graph_string)
+    clusterer.create_dataset()
+    return clusterer
+
 @login_required
 def basic_clustering(request):
     # Select papers for clustering
@@ -41,9 +74,9 @@ def basic_clustering(request):
     schedule = Conference.objects.get(user = request.user, pk=request.session['conf'] ).schedule_string
     schedule = ast.literal_eval(schedule)
     print(schedule)
-    clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings)
-    # Try with graph - TODO:: make this optional through a clustering settings page
-    clusterer.add_graph(schedule_db.paper_graph_string)
+    #clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings)
+    #clusterer.add_graph(schedule_db.paper_graph_string)
+    clusterer = setup_clustering(request)
     clusterer.create_dataset()
     clusterer.basic_clustering()
     clusterer.fit_to_schedule2()
@@ -103,3 +136,12 @@ def clustering_results_assigned(request):
                    'paper_ids':paper_ids, 'paper_clusters':paper_clusters,
                    'paper_coords_x':paper_coords_x,
                    'paper_coords_y':paper_coords_y, 'all':False})
+
+def clustering_settings(request):
+    # Check if assignment data is avaivable
+    conf = Conference.objects.get(pk=request.session['conf'], user=request.user)
+    if conf.paper_graph_string == '[]':
+        has_assignment_data = False
+    else:
+        has_assignment_data = True
+    return render(request, 'app/clustering_settings.html', {'has_assignment_data':has_assignment_data})

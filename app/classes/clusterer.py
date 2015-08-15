@@ -5,7 +5,7 @@ from ..models import Paper
 from sklearn import cluster
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, AffinityPropagation, DBSCAN, AgglomerativeClustering, MeanShift, MiniBatchKMeans
 from sklearn.decomposition import PCA
 import scipy.sparse
 import numpy as np
@@ -174,7 +174,13 @@ class Clusterer:
     num_clusters = 6
     graph_dataset = None
     using_graph_data = False
-    def __init__(self, papers: list, schedule: list, schedule_settings: list):
+    using_abstracts = False
+    using_titles = False
+    cluster_function = ""
+    vocab = []
+    def __init__(self, papers: list, schedule: list, schedule_settings: list, func):
+        self.vocab = []
+        self.cluster_function = func
         self.papers = []
         self.data = []
         self.schedule = []
@@ -189,13 +195,27 @@ class Clusterer:
         self.first_clustering = True
         self.get_slots()
         # Needed, since clustering cannot be performed if n_samples < n_clusters
-        self.set_cluster_function()
-        pass
 
-    def set_cluster_function(self):
+    def set_custom_vocabulary(self, vocab_string):
+        words = vocab_string.split(' ')
+        for word in words:
+            self.vocab.append(word)
+
+    def set_cluster_function(self, func):
         if len(self.papers) < self.num_clusters:
             self.num_clusters = len(self.papers)
-        self.cluster_function = KMeans(n_clusters=self.num_clusters)
+        if func == 'aff':
+            self.cluster_function = AffinityPropagation()
+        if func =='dbs':
+            self.cluster_function = DBSCAN()
+        if func == 'hie':
+            self.cluster_function = AgglomerativeClustering()
+        if func == 'kme':
+            self.cluster_function = KMeans(n_clusters=self.num_clusters)
+        if func == 'msh':
+            self.cluster_function = MeanShift()
+        if func == 'kmm':
+            self.cluster_function = MiniBatchKMeans(n_clusters=self.num_clusters)
 
     def add_papers(self, papers: list):
         for paper in papers:
@@ -242,13 +262,14 @@ class Clusterer:
         # Create a probability matrix
         #
         self.paper_graph.create_probability_matrix()
+        """
         print(self.paper_graph.prob_matrix[0])
         print(self.paper_graph.nodes[0])
         print("sums")
+        """
         graph_dataset = []
         for node in self.paper_graph.nodes:
             pr = self.paper_graph.get_pr(node)
-            print(pr.tolist())
             graph_dataset.append(pr.tolist())
         self.graph_dataset = graph_dataset
 
@@ -305,33 +326,65 @@ class Clusterer:
     def create_dataset(self):
         self.data_list = []
         abstracts = []
-        for paper in self.papers:
-            abstracts.append(paper.paper.title)
-        if self.graph_dataset == None:
+        titles = []
+        if self.vocab == []:
             count_vectorizer = CountVectorizer()
-            abstract_count = count_vectorizer.fit_transform(abstracts)
-            tfid_transformer = TfidfTransformer()
-            abstract_tfid = tfid_transformer.fit_transform(abstract_count)
-            self.data = abstract_tfid
-            print("TYPE: ",type(self.data))
-            self.using_graph_data = False
         else:
+            count_vectorizer = CountVectorizer(vocabulary=self.vocab)
+        tfid_transformer = TfidfTransformer()
+        abstract_data = None
+        title_data = None
+        graph_data = None
+        for paper in self.papers:
+            abstracts.append(paper.paper.abstract)
+            titles.append(paper.paper.title)
+        if self.using_abstracts == True:
+            print("using abstract data")
+            abstract_count = count_vectorizer.fit_transform(abstracts)
+            abstract_tfid = tfid_transformer.fit_transform(abstract_count)
+            abstract_data = abstract_tfid
+        if self.using_titles == True:
+            print("using title data")
+            title_count = count_vectorizer.fit_transform(titles)
+            abstract_tfid = tfid_transformer.fit_transform(title_count)
+            title_data = abstract_tfid
+        if self.using_graph_data == True:
             print("using graph data")
-            self.data = np.matrix(self.graph_dataset)
-            self.using_graph_data = True
+            graph_data = scipy.sparse.csr_matrix(np.matrix(self.graph_dataset))
+        self.data = []
+        for paper in self.papers:
+            self.data.append([0])
+        self.data=scipy.sparse.csr_matrix(self.data)
+        if abstract_data != None:
+            self.data = scipy.sparse.hstack([self.data, abstract_data])
+        if title_data != None:
+            self.data = scipy.sparse.hstack([self.data, title_data])
+        if graph_data != None:
+            self.data = scipy.sparse.hstack([self.data, graph_data])
+        print("DATA")
+        print(self.data.toarray()[0])
 
     def basic_clustering(self):
-        print("LEN ",len(self.data))
-        cluster_distances = self.cluster_function.fit_transform(self.data)
         cluster_values = self.cluster_function.fit_predict(self.data).tolist()
-        print("ERROR ", len(self.papers), len(cluster_distances))
+        if self.cluster_function == 'kmm' or self.cluster_function == 'kme':
+            cluster_distances = self.cluster_function.fit_transform(self.data)
+        else:
+            cluster_distances = []
+            for paper in self.papers:
+                d = []
+                for a in range(0,len(cluster_values)):
+                    d.append(0)
+                cluster_distances.append(d)
         for index,distance in enumerate(cluster_distances):
             self.papers[index].cluster_distances = distance
         for index,value in enumerate(cluster_values):
             self.papers[index].cluster = value
         # Assign basic clusters to papers
-        for paper in self.papers:
-            paper.paper.simple_cluster = paper.cluster
+        if self.first_clustering == True:
+            print("first clustering")
+            for paper in self.papers:
+                print("assigned ", paper.cluster, "to paper " ,paper.paper.title)
+                paper.paper.simple_cluster = paper.cluster
         # Get coordinates for visualization
         self.get_coords()
         #for i in range(0,len(self.cluster_distances)):
@@ -373,7 +426,7 @@ class Clusterer:
             self.papers[index].coord_y = y
         if self.first_clustering == True:
             for paper in self.papers:
-                #paper.paper.simple_cluster = paper.paper.cluster
+              #  paper.paper.simple_cluster = paper.paper.cluster
                 paper.paper.simple_visual_x = paper.coord_x
                 paper.paper.simple_visual_y = paper.coord_y
                 paper.paper.save()
@@ -467,7 +520,7 @@ class Clusterer:
                 else:
                     # Needed, since clustering cannot be performed if n_samples < n_clusters
                     self.num_clusters -= 1
-                    self.set_cluster_function()
+                    self.set_cluster_function(self.cluster_function)
                     self.create_dataset()
                     self.basic_clustering()
                     print("NO SUITABLE COMBINATION FOUND2")
@@ -507,7 +560,6 @@ class Clusterer:
             # remove the assigned papers from this class, since they no longer need to be assigned
             offset = 0
             for paper, index in papers_to_update:
-                print("INDEX ", index)
                 self.papers.remove(paper)
                 # Remove the relevant line from graph dataset
                 if self.using_graph_data == True:
@@ -521,6 +573,6 @@ class Clusterer:
             else:
                 del self.slots[slot_index].sub_slots[0]
             # redo clustering
-            #self.set_cluster_function()
+            #self.set_cluster_function(self.cluster_function)
             #self.create_dataset()
             #self.basic_clustering()
