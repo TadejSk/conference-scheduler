@@ -183,6 +183,7 @@ class Clusterer:
         self.vocab = []
         self.cluster_function = func
         self.papers = []
+        self.active_papers = []
         self.data = []
         self.schedule = []
         self.schedule_settings = []
@@ -223,6 +224,7 @@ class Clusterer:
         for paper in papers:
             paper_to_add = ClusterPaper(paper)
             self.papers.append(paper_to_add)
+        self.active_papers = self.papers
 
     def add_slot_times(self, schedule_settings: list):
         self.schedule_settings = schedule_settings
@@ -400,6 +402,8 @@ class Clusterer:
                 paper.paper.simple_cluster = paper.cluster+1
                 paper.paper.simple_visual_x = self.data[index][0]
                 paper.paper.simple_visual_y = self.data[index][1]
+                paper.paper.visual_x = self.data[index][0]
+                paper.paper.visual_y = self.data[index][1]
                 paper.paper.save()
                 self.first_clustering = False
         # Get coordinates for visualization
@@ -427,27 +431,17 @@ class Clusterer:
             visual_coords_y =  [0]
         else:
             self.create_dataset()
-            if scipy.sparse.issparse(self.data):
-                data = self.data.toarray()
-            else:
-                data = self.data
-            # Reduction of dimensions is done with TruncatedSVD and TSNE
-            if len(data) > 50:
-                #SVD_data = TruncatedSVD(n_components=50).fit_transform(data)
-                SVD_data = data
-            else:
-                SVD_data = data
-            tsne_data = TSNE(n_components=2, learning_rate=100, init="pca").fit_transform(SVD_data)
-            self.cluster_function.fit(tsne_data)
             #print("--------------COORDS------------")
             #print(pca_data[:,0])
             #print(pca_data[:,1])
-            visual_coords_x = tsne_data[:,0]
-            visual_coords_y =  tsne_data[:,1]
+            visual_coords_x = self.data[:,0]
+            visual_coords_y =  self.data[:,1]
         for index, x in enumerate(visual_coords_x):
-            self.papers[index].coord_x = x
+            #self.papers[index].paper.visual_x = x
+            self.papers[index].paper.save()
         for index, y in enumerate(visual_coords_y):
-            self.papers[index].coord_y = y
+            #self.papers[index].paper.visual_y = y
+            self.papers[index].paper.save()
 
     def reset_papers(self):
         for paper in self.papers:
@@ -572,8 +566,6 @@ class Clusterer:
                 paper.paper.add_to_row = coords[1]
                 paper.paper.add_to_col = coords[2]
                 #print("COORD ",  index, self.visual_coords_x[index], self.visual_coords_y[index])
-                paper.paper.visual_x = paper.coord_x
-                paper.paper.visual_y = paper.coord_y
                 paper.paper.save()
             self.current_cluster += 1
             # remove the assigned papers from this class, since they no longer need to be assigned
