@@ -28,4 +28,8 @@ urlpatterns = [
     url(r'^conference/list/', views.conference_list, name='conference_list'),
     url(r'^conference/create/', views.create_conference, name='create_conference'),
     url(r'^conference/delete/', views.delete_conference, name='delete_conference'),
+    url(r'^conference/copy/', views.copy_conference, name='copy_conference'),
+    url(r'^conference/rename/action', views.rename_conference_action, name='rename_conference_action'),
+    url(r'^conference/rename/', views.rename_conference, name='rename_conference'),
+
 ]

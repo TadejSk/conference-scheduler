@@ -1,3 +1,4 @@
+import ast
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from app.models import Conference
@@ -26,4 +27,46 @@ def create_conference(request):
 def delete_conference(request):
     conference = Conference.objects.get(pk=request.POST.get('conference', None), user=request.user)
     conference.delete()
+    return redirect('/app/conference/list')
+
+@login_required
+def copy_conference(request):
+    # Create conference base
+    new_conference = Conference()
+    new_conference.user = request.user
+    copied_conference = Conference.objects.get(pk=request.POST.get('conference', None), user=request.user)
+    new_conference.title = "Copy of " + copied_conference.title
+    # Copy conference structure
+    settings_str = copied_conference.settings_string
+    new_conference.settings_string = settings_str
+    # Create new empty list of papers
+    settings_list = ast.literal_eval(settings_str)
+    new_list = []
+    for d in settings_list:
+        day = []
+        for r in d:
+            row = []
+            for c in r:
+                col = []
+                row.append(col)
+            day.append(row)
+        new_list.append(day)
+    new_conference.schedule_string = str(new_list)
+    new_conference.num_days = copied_conference.num_days
+    new_conference.slot_length = copied_conference.slot_length
+    new_conference.save()
+    return redirect('/app/conference/list')
+
+@login_required
+def rename_conference(request):
+    old_conference = Conference.objects.get(pk=request.POST.get('conference', None), user=request.user)
+    id = old_conference.id
+    old_name = old_conference.title
+    return render(request, 'app/conference_rename.html', {'old_name':old_name, 'id':id})
+
+@login_required
+def rename_conference_action(request):
+    old_conference = Conference.objects.get(pk=request.POST.get('conference', None), user=request.user)
+    old_conference.title = request.POST.get('newname', 'Unnamed conference')
+    old_conference.save()
     return redirect('/app/conference/list')
