@@ -73,9 +73,29 @@
                                     {% for col in row %}
                                         <div class="col-md-{{ row|allign_schedule }}">
                                             <div class="well" name="slot">
-                                                Slot {{ forloop.parentloop.counter }}<br/>
-                                                Length: {{ col }}min <br/>
-                                                Free time: {{ col }}min <br/>
+                                                <div class="row">
+                                                    <div class="col-xs-10">
+                                                        Slot {{ forloop.parentloop.counter }}<br/>
+                                                        Length: {{ col }}min <br/>
+                                                        Free time: {{ col }}min <br/>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <form class="form-inline" method="post" action="{% url 'app:move_slot_up' %}">
+                                                            {% csrf_token %}
+                                                            <input hidden id="slot" name="slot" value="{{ forloop.parentloop.counter }}">
+                                                            <input hidden id="day" name="day" value="{{ day }}">
+                                                            <button class="btn btn-default">Move slot up</button>
+                                                        </form>
+                                                        <form class="form-inline" method="post" action="{% url 'app:move_slot_down' %}">
+                                                            {% csrf_token %}
+                                                            <input hidden id="slot" name="slot" value="{{ forloop.parentloop.counter }}">
+                                                            <input hidden id="day" name="day" value="{{ day }}">
+                                                            <button class="btn btn-default">Move slot down</button>
+                                                        </form>
+
+                                                    </div>
+                                                </div>
+                                                <br/>
                                                 <!-- Display all the papers in the slot -->
                                                 {% get_paper schedule day forloop.parentloop.counter0 forloop.counter0 as papers %}
                                                 {% for paper in papers %}
@@ -109,7 +129,7 @@
                                                        name="col"/>
                                                 <input class="hidden" , value="{{ forloop.parentloop.counter0 }}"
                                                        id="row" , name="row"/>
-                                                {% with num_lines=col|div:20 %}
+                                                {% with num_lines=col|div:50 %}
                                                     {% for b in num_lines|custom_range %}
                                                         <br/>
                                                     {% endfor %}

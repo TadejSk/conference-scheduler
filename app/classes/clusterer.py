@@ -209,10 +209,11 @@ class Clusterer:
             self.num_clusters = len(self.papers)
         if func == 'aff':
             self.cluster_function = AffinityPropagation()
+            #print("AFF: ",self.cluster_function.preferences)
         if func =='dbs':
-            self.cluster_function = DBSCAN()
+            self.cluster_function = DBSCAN(min_samples=2)
         if func == 'hie':
-            self.cluster_function = AgglomerativeClustering()
+            self.cluster_function = AgglomerativeClustering(n_clusters=self.num_clusters)
         if func == 'kme':
             self.cluster_function = KMeans(n_clusters=self.num_clusters)
         if func == 'msh':

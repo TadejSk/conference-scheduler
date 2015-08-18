@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render, redirect
 from ..models import Conference
@@ -110,3 +111,50 @@ def delete_slot(request):
     settings_model.schedule_string = str(schedule)
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+
+@login_required
+def move_slot_up(request):
+    day = int(request.POST.get('day'))
+    slot = int(request.POST.get('slot'))-1
+    if slot == 0:
+        return redirect('/app/index/')
+    conf = Conference.objects.get(user=request.user, pk=request.session['conf'])
+    settings = ast.literal_eval(conf.settings_string)
+    schedule = ast.literal_eval(conf.schedule_string)
+    settings_day = settings[day]
+    schedule_day = schedule[day]
+    settings_day = swap_slots(slot, slot-1, settings_day)
+    schedule_day = swap_slots(slot, slot-1, schedule_day)
+    settings[day] = settings_day
+    schedule[day] = schedule_day
+    conf.settings_string = str(settings)
+    conf.schedule_string = str(schedule)
+    conf.save()
+    return redirect('/app/index/')
+
+@login_required
+def move_slot_down(request):
+    day = int(request.POST.get('day'))
+    slot = int(request.POST.get('slot'))-1
+    conf = Conference.objects.get(user=request.user, pk=request.session['conf'])
+    settings = ast.literal_eval(conf.settings_string)
+    schedule = ast.literal_eval(conf.schedule_string)
+    settings_day = settings[day]
+    schedule_day = schedule[day]
+    if slot == len(settings_day) - 1 or slot == len(schedule_day) - 1:
+        return redirect('/app/index/')
+    settings_day = swap_slots(slot, slot+1, settings_day)
+    schedule_day = swap_slots(slot, slot+1, schedule_day)
+    settings[day] = settings_day
+    schedule[day] = schedule_day
+    conf.settings_string = str(settings)
+    conf.schedule_string = str(schedule)
+    conf.save()
+    return redirect('/app/index/')
+
+
+def swap_slots(slot1_index, slot2_index, list):
+    temp_slot = list[slot2_index]
+    list[slot2_index] = list[slot1_index]
+    list[slot1_index] = temp_slot
+    return list
