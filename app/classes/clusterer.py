@@ -6,7 +6,8 @@ from sklearn import cluster
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.cluster import KMeans, AffinityPropagation, DBSCAN, AgglomerativeClustering, MeanShift, MiniBatchKMeans
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, TruncatedSVD
+from sklearn.manifold import TSNE
 import scipy.sparse
 import numpy as np
 
@@ -197,9 +198,10 @@ class Clusterer:
         # Needed, since clustering cannot be performed if n_samples < n_clusters
 
     def set_custom_vocabulary(self, vocab_string):
-        words = vocab_string.split(' ')
-        for word in words:
-            self.vocab.append(word)
+        if vocab_string != '':
+            words = vocab_string.split(' ')
+            for word in words:
+                self.vocab.append(word)
 
     def set_cluster_function(self, func):
         if len(self.papers) < self.num_clusters:
@@ -327,6 +329,7 @@ class Clusterer:
         self.data_list = []
         abstracts = []
         titles = []
+        print("VOCAB: ", self.vocab)
         if self.vocab == []:
             count_vectorizer = CountVectorizer()
         else:
@@ -343,14 +346,17 @@ class Clusterer:
             abstract_count = count_vectorizer.fit_transform(abstracts)
             abstract_tfid = tfid_transformer.fit_transform(abstract_count)
             abstract_data = abstract_tfid
+            print(abstract_data)
         if self.using_titles == True:
             print("using title data")
             title_count = count_vectorizer.fit_transform(titles)
             abstract_tfid = tfid_transformer.fit_transform(title_count)
             title_data = abstract_tfid
+            print(title_data)
         if self.using_graph_data == True:
             print("using graph data")
             graph_data = scipy.sparse.csr_matrix(np.matrix(self.graph_dataset))
+            print(graph_data)
         self.data = []
         for paper in self.papers:
             self.data.append([0])
@@ -361,8 +367,14 @@ class Clusterer:
             self.data = scipy.sparse.hstack([self.data, title_data])
         if graph_data != None:
             self.data = scipy.sparse.hstack([self.data, graph_data])
-        print("DATA")
-        print(self.data.toarray()[0])
+        # Reduce data to two dimensions
+        if self.data.getnnz() < 50:
+            svd_data = TruncatedSVD(n_components=50).fit_transform(self.data)
+        else:
+            svd_data = self.data
+        tsne_data = TSNE(n_components=2).fit_transform(svd_data)
+        self.data = scipy.sparse.csr_matrix(tsne_data)
+        self.data = self.data.toarray()
 
     def basic_clustering(self):
         cluster_values = self.cluster_function.fit_predict(self.data).tolist()
@@ -382,15 +394,21 @@ class Clusterer:
         # Assign basic clusters to papers
         if self.first_clustering == True:
             print("first clustering")
-            for paper in self.papers:
-                print("assigned ", paper.cluster, "to paper " ,paper.paper.title)
-                paper.paper.simple_cluster = paper.cluster
+            print(self.data)
+            for index,paper in enumerate(self.papers):
+                print("assigned ", paper.cluster+1, "to paper " ,paper.paper.title)
+                paper.paper.simple_cluster = paper.cluster+1
+                paper.paper.simple_visual_x = self.data[index][0]
+                paper.paper.simple_visual_y = self.data[index][1]
+                paper.paper.save()
+                self.first_clustering = False
         # Get coordinates for visualization
         self.get_coords()
         #for i in range(0,len(self.cluster_distances)):
         #    print(self.papers[i].title, "-", self.cluster_distances[i])
 
     def find_papers_with_sum(self, set, subset, desired_sum, curr_index, result):
+        #print("find_papers ", set, subset, desired_sum, curr_index, result)
         lens = [p.paper.length for p in subset]
         if sum(lens) == desired_sum:
             indexes = []
@@ -413,24 +431,23 @@ class Clusterer:
                 data = self.data.toarray()
             else:
                 data = self.data
-            pca_data = PCA(n_components=2).fit_transform(data)
-            self.cluster_function.fit(pca_data)
+            # Reduction of dimensions is done with TruncatedSVD and TSNE
+            if len(data) > 50:
+                #SVD_data = TruncatedSVD(n_components=50).fit_transform(data)
+                SVD_data = data
+            else:
+                SVD_data = data
+            tsne_data = TSNE(n_components=2, learning_rate=100, init="pca").fit_transform(SVD_data)
+            self.cluster_function.fit(tsne_data)
             #print("--------------COORDS------------")
             #print(pca_data[:,0])
             #print(pca_data[:,1])
-            visual_coords_x = pca_data[:,0]
-            visual_coords_y =  pca_data[:,1]
+            visual_coords_x = tsne_data[:,0]
+            visual_coords_y =  tsne_data[:,1]
         for index, x in enumerate(visual_coords_x):
             self.papers[index].coord_x = x
         for index, y in enumerate(visual_coords_y):
             self.papers[index].coord_y = y
-        if self.first_clustering == True:
-            for paper in self.papers:
-              #  paper.paper.simple_cluster = paper.paper.cluster
-                paper.paper.simple_visual_x = paper.coord_x
-                paper.paper.simple_visual_y = paper.coord_y
-                paper.paper.save()
-                self.first_clustering = False
 
     def reset_papers(self):
         for paper in self.papers:
@@ -442,6 +459,7 @@ class Clusterer:
             paper.paper.save()
 
     def fit_to_schedule2(self):
+        print("started fitting")
         """
         An alternate approach approach:
             1.) Perform clustering with basic_clustering - done manually in the view
@@ -455,6 +473,7 @@ class Clusterer:
         # Slot lengths are initialized in __init__
         previous_clusters = []  # Used when picking clusters for parallel slots
         while self.slots != []:
+            print("slots")
             do_break = False
             # Get biggest empty slot - only select parallel slots once all non-parallel slots have already been filled
             slot_length = 0
