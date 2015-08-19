@@ -67,14 +67,17 @@
                         )
                     </div>
                     <div class="panel-body" id="schedule_div">
-                        <table class="table">
+                        <div class="table">
                             {% for row in settings_list %}
-                                <div class="row">
+                                <div class="panel panel-default">
                                     {% for col in row %}
+                                        {% if forloop.counter0|mod:3 == 0%}
+                                            <div class="row">
+                                        {% endif %}
                                         <div class="col-md-{{ row|allign_schedule }}">
                                             <div class="well" name="slot">
                                                 <div class="row">
-                                                    <div class="col-xs-10">
+                                                    <div class="col-xs-5">
                                                         Slot {{ forloop.parentloop.counter }}<br/>
                                                         Length: {{ col }}min <br/>
                                                         Free time: {{ col }}min <br/>
@@ -92,38 +95,37 @@
                                                             <input hidden id="day" name="day" value="{{ day }}">
                                                             <button class="btn btn-default">Move slot down</button>
                                                         </form>
-
                                                     </div>
                                                 </div>
                                                 <br/>
                                                 <!-- Display all the papers in the slot -->
                                                 {% get_paper schedule day forloop.parentloop.counter0 forloop.counter0 as papers %}
                                                 {% for paper in papers %}
-                                                        <div class="well">
-                                                                <div class="row">
-                                                                    <a href="/app/papers/view/?id={{ paper }}" name="paper">
-                                                                    <div class="col-xs-8">
-                                                                        {{ paper_dict|get_element_at:paper }}
-                                                                    </div>
-                                                                        </a>
-                                                                    <div class="col-xs-4">
-                                                                            {% if paper_locked|get_element_at:paper %}
-                                                                                <p class="text-right">
-                                                                                    <input type="submit" class="btn btn-sm btn-danger"
-                                                                                           value="Unlock paper" name="lock-button"
-                                                                                            id="{{ paper }}"/>
-                                                                                </p>
+                                                    <div class="well">
+                                                        <div class="row">
+                                                            <a href="/app/papers/view/?id={{ paper }}" name="paper">
+                                                            <div class="col-xs-8">
+                                                                {{ paper_dict|get_element_at:paper }}
+                                                            </div>
+                                                                </a>
+                                                            <div class="col-xs-4">
+                                                                {% if paper_locked|get_element_at:paper %}
+                                                                    <p class="text-right">
+                                                                        <input type="submit" class="btn btn-sm btn-danger"
+                                                                               value="Unlock paper" name="lock-button"
+                                                                                id="{{ paper }}"/>
+                                                                    </p>
 
-                                                                            {% else %}
-                                                                                <p class="text-right">
-                                                                                    <input type="submit" class="btn btn-sm btn-primary"
-                                                                                           value="Lock paper" name="lock-button"
-                                                                                            id="{{ paper }}"/>
-                                                                                </p>
-                                                                            {% endif %}
-                                                                    </div>
-                                                                </div>
+                                                                {% else %}
+                                                                    <p class="text-right">
+                                                                        <input type="submit" class="btn btn-sm btn-primary"
+                                                                               value="Lock paper" name="lock-button"
+                                                                                id="{{ paper }}"/>
+                                                                    </p>
+                                                                {% endif %}
+                                                            </div>
                                                         </div>
+                                                    </div>
                                                 {% endfor %}
                                                 <input class="hidden" , value="{{ forloop.counter0 }}" id="col" ,
                                                        name="col"/>
@@ -136,13 +138,19 @@
                                                 {% endwith %}
                                             </div>
                                         </div>
+                                        {% if forloop.counter0|mod:3 == 2%}
+                                            </div>
+                                        {% endif %}
                                     {% endfor %}
+                                    {# </div> #}
+                                </div>
                                 </div>
                             {% endfor %}
-                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+
 {% endblock content %}

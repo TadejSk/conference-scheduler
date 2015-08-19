@@ -19,7 +19,10 @@ def wrap_int_in_list(value):
 @register.filter()
 def allign_schedule(value):
     l = wrap_int_in_list(value)
-    return int(12/len(l))
+    ln = int(12/len(l))
+    if ln < 4:
+        ln = 4
+    return ln
 
 @register.filter()
 def mul(value, arg):
@@ -40,3 +43,7 @@ def multiarg_get_element_at(value, arg):
     for arg in args():
         element = value[arg]
     return element
+
+@register.filter()
+def mod(value, arg):
+    return value % arg
