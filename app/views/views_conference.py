@@ -81,4 +81,24 @@ def export_schedule(request):
         for row in day:
             if len(row) > max_slots[index]:
                 max_slots[index] = len(row)
-    return render(request, 'app/export_schedule.html', {'schedule':schedule, 'max_slots':max_slots})
+    # Generate starting times
+    start_times = ast.literal_eval(conf.start_times)
+    times = []
+    for day, time in enumerate(start_times):
+        day_times = []
+        hour = int(time.split(':')[0])
+        minute = int(time.split(':')[1])
+        length = 0
+        for row in schedule[day]:
+            row_times = []
+            length = row[0]
+            for i in range(length//15):
+                row_times.append(str(hour) + ":" + str(minute))
+                minute += 15
+                if minute >= 60:
+                    minute -= 60
+                    hour += 1
+            day_times.append(row_times)
+        times.append(day_times)
+    print(times)
+    return render(request, 'app/export_schedule.html', {'schedule':schedule, 'max_slots':max_slots, 'times':times})
