@@ -1,0 +1,11 @@
+.export {
+    border:1px solid black;
+}
+
+.slot {
+    border:1px solid black;
+}
+
+.row {
+    height:12px;
+}

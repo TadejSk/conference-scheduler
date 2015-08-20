@@ -47,3 +47,19 @@ def multiarg_get_element_at(value, arg):
 @register.filter()
 def mod(value, arg):
     return value % arg
+
+@register.filter()
+def row_to_table(value):
+    rows = []
+    row = []
+    for ln in value:
+        row.append(value[0]//15)
+    rows.append(row)
+    row = []
+    for ln in value:
+        row.append(0)
+    for i in range(1, (value[0]//15)):
+        rows.append(row)
+    print(rows)
+    return rows
+

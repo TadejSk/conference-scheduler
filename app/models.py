@@ -36,6 +36,7 @@ class Conference(models.Model):
     num_days = models.IntegerField(default=1)
     paper_graph_string = models.TextField(max_length=100000000, default = '[]')
     user = models.ForeignKey(User)
+    start_times=models.CharField(max_length=100000, default = "['7:00']")
     def __str__(self):
         return self.settings_string
 

@@ -70,3 +70,15 @@ def rename_conference_action(request):
     old_conference.title = request.POST.get('newname', 'Unnamed conference')
     old_conference.save()
     return redirect('/app/conference/list')
+
+@login_required
+def export_schedule(request):
+    conf = Conference.objects.get(pk=request.session['conf'], user=request.user)
+    schedule = ast.literal_eval(conf.settings_string)
+    max_slots = []
+    for index, day in enumerate(schedule):
+        max_slots.append(0)
+        for row in day:
+            if len(row) > max_slots[index]:
+                max_slots[index] = len(row)
+    return render(request, 'app/export_schedule.html', {'schedule':schedule, 'max_slots':max_slots})

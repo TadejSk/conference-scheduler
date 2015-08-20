@@ -8,6 +8,7 @@ __author__ = 'Tadej'
 
 def schedule_settings(request):
     error = request.session['parallel_error']
+    time_error = request.session.get('time_error', "")
     settings = Conference.objects.get(user=request.user, pk=request.session['conf'])
     num_days = None
     base_time = None
@@ -18,8 +19,10 @@ def schedule_settings(request):
     if day >= num_days and num_days >=1:
         raise Http404('The selected day is too high')
     settings_list = ast.literal_eval(settings.settings_string)[int(request.GET.get('day',0))]
+    start_time = ast.literal_eval(settings.start_times)[int(request.GET.get('day',0))]
     return render(request, 'app/settings/schedule.html', {'num_days':num_days, 'base_time':base_time, 'day':day,
-                                                          'settings_list':settings_list, 'error':error})
+                                                          'settings_list':settings_list, 'error':error, 'start_time':start_time,
+                                                          'time_error':time_error})
 
 def save_simple_schedule_settings(request):
     num_days = request.POST.get('num_days',None)
@@ -29,6 +32,7 @@ def save_simple_schedule_settings(request):
         settings.num_days=num_days
         settings.slot_length=base_time
         settings.user=request.user
+        settings.start_times = ['7:00' for x in range(num_days)]
         settings.save()
     else:
         settings=Conference.objects.get(user=request.user, pk=request.session['conf'])
@@ -37,18 +41,48 @@ def save_simple_schedule_settings(request):
         # Update settings string
         s = schedule_settings_class(settings.settings_string, int(settings.num_days))
         settings.settings_string = str(s)
-        # Update schedule string
+        # Update schedule string and starting times string
         schedule = ast.literal_eval(settings.schedule_string)
-
+        times = ast.literal_eval(settings.start_times)
         if len(schedule) < int(num_days):
             for i in range(int(num_days)-len(schedule)):
                     schedule.append([])
+                    times.append('7:00')
         if len(schedule) > int(num_days):
             schedule = schedule[:int(num_days)]
+            times = times[:int(num_days)]
         settings.schedule_string = str(schedule)
+        settings.start_times = str(times)
         # If we added extra days, the settings string needs to be updated
         settings.save()
     return redirect('/app/settings/schedule/')
+
+def change_start_time(request):
+    request.session['time_error'] = ""
+    day = int(request.POST.get('day', None))
+    time = request.POST.get('time', None)
+    # Validate starting time
+    if not ':' in time:
+        request.session['time_error'] = "Starting time must be in format Hour:Minutes (ie. 7:00)"
+        return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+    try:
+        hour = int(time.split(':')[0])
+        if hour < 0 or hour > 24:
+            request.session['time_error'] = "Invalid hour"
+            return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+        minute = int(time.split(':')[1])
+        if minute < 0 or minute > 59:
+            request.session['time_error'] = "Invalid minute"
+            return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+    except:
+        request.session['time_error'] = "Starting time must be in format Hour:Minutes (ie. 7:00)"
+        return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+    conf = Conference.objects.get(user=request.user, pk=request.session['conf'])
+    start_times = ast.literal_eval(conf.start_times)
+    start_times[day] = time
+    conf.start_times = start_times
+    conf.save()
+    return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
 def schedule_add_slot(request):
     settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])

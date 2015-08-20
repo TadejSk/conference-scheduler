@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^settings/schedule/add_parallel_slots/', views.schedule_add_parallel_slots, name='schedule_add_parallel_slots'),
     url(r'^settings/schedule/change_slot_length/', views.schedule_change_slot_time, name='schedule_change_slot_length'),
     url(r'^settings/schedule/delete_slot/', views.delete_slot, name='schedule_delete_slot'),
+    url(r'^settings/schedule/change_start_time', views.change_start_time, name='change_start_time'),
     url(r'^settings/schedule/up/', views.move_slot_up, name='move_slot_up'),
     url(r'^settings/schedule/down/', views.move_slot_down, name='move_slot_down'),
     url(r'^settings/schedule/', views.schedule_settings, name='schedule_settings'),
@@ -33,5 +34,6 @@ urlpatterns = [
     url(r'^conference/copy/', views.copy_conference, name='copy_conference'),
     url(r'^conference/rename/action', views.rename_conference_action, name='rename_conference_action'),
     url(r'^conference/rename/', views.rename_conference, name='rename_conference'),
+    url(r'^conference/export/', views.export_schedule, name='export_schedule'),
 
 ]

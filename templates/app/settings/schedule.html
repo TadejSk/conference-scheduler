@@ -45,6 +45,19 @@
                         )
                     </div>
                     <div class="panel-body">
+                        <form action="{% url 'app:change_start_time' %}" method="post">
+                            {% csrf_token %}
+                            <input class="hidden" , value={{ day }} id="day", name="day"/>
+                            <div class="input-group">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-primary">Change starting time</button>
+                            </span>
+                            <input type="text" id="time" name="time" class="form-control"
+                                   placeholder="{{ start_time }}">
+                            </div>
+
+                            <label class="">{{ time_error }}</label>
+                        </form>
                         <table class="table">
                             {% for row in settings_list %}
                                 <div class="row">
