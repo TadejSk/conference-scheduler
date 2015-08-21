@@ -22,13 +22,13 @@ function addPaper(e) {
         day = param.split("=")[1]
     }
 
-    for (var child of children) {
-        if (child.tagName == 'INPUT') {
-            if (child.name == 'row') {
-                row = child.value;
+    for (var i = 0; i<children.length; i++) {
+        if (children[i].tagName == 'INPUT') {
+            if (children[i].name == 'row') {
+                row = children[i].value;
             }
-            if (child.name == 'col') {
-                col = child.value;
+            if (children[i].name == 'col') {
+                col = children[i].value;
             }
         }
     }
@@ -127,17 +127,17 @@ function init() {
     paper_panel.addEventListener('dragover', dragOver, false);
     paper_panel.addEventListener('drop', removePaper, false);
     var papers = document.getElementsByName('paper');
-    for (var paper of papers) {
-        paper.addEventListener('dragstart', dragStart, false);
+    for (var i = 0; i<papers.length;i++) {
+        papers[i].addEventListener('dragstart', dragStart, false);
     }
     var slots = document.getElementsByName('slot');
-    for (var slot of slots) {
-        slot.addEventListener('dragover', dragOver, false);
-        slot.addEventListener('drop', addPaper, false);
+    for (var i = 0; i<slots.length;i++) {
+        slots[i].addEventListener('dragover', dragOver, false);
+        slots[i].addEventListener('drop', addPaper, false);
     }
     var buttons = document.getElementsByName('lock-button');
-    for (var button of buttons){
-        button.addEventListener('click', lock, false);
+    for (var i = 0; i<buttons.length; i++){
+        buttons[i].addEventListener('click', lock, false);
     }
     /*
     var forms = document.getElementsByName('lock-form');
