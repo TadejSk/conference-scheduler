@@ -5,7 +5,7 @@ from ..models import Paper
 from sklearn import cluster
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.cluster import KMeans, AffinityPropagation, DBSCAN, AgglomerativeClustering, MeanShift, MiniBatchKMeans
+from sklearn.cluster import KMeans, AffinityPropagation, DBSCAN, AgglomerativeClustering, MeanShift, MiniBatchKMeans, estimate_bandwidth
 from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.manifold import TSNE
 import scipy.sparse
@@ -163,6 +163,10 @@ class Clusterer:
     :type data_list : list[list[string]]
     :type slots: list[ClusterSlot]
     """
+    bandwith_factor = 0
+    func = ""
+    eps = 0.02
+    using_dbs = False
     paper_graph = []
     papers = []
     data = []
@@ -205,18 +209,22 @@ class Clusterer:
                 self.vocab.append(word)
 
     def set_cluster_function(self, func):
+        self.func = ""
+        self.using_dbs = False
         if len(self.papers) < self.num_clusters:
             self.num_clusters = len(self.papers)
         if func == 'aff':
             self.cluster_function = AffinityPropagation()
             #print("AFF: ",self.cluster_function.preferences)
         if func =='dbs':
-            self.cluster_function = DBSCAN(min_samples=2)
+            self.using_dbs = True
+            self.cluster_function = DBSCAN(eps=0.02, min_samples=2)
         if func == 'hie':
             self.cluster_function = AgglomerativeClustering(n_clusters=self.num_clusters)
         if func == 'kme':
             self.cluster_function = KMeans(n_clusters=self.num_clusters)
         if func == 'msh':
+            self.func = "msh"
             self.cluster_function = MeanShift()
         if func == 'kmm':
             self.cluster_function = MiniBatchKMeans(n_clusters=self.num_clusters)
@@ -372,12 +380,41 @@ class Clusterer:
             self.data = scipy.sparse.hstack([self.data, graph_data])
         # Reduce data to two dimensions
         if self.data.getnnz() < 50:
+            svd_data = self.data
             svd_data = TruncatedSVD(n_components=50).fit_transform(self.data)
         else:
             svd_data = self.data
-        tsne_data = TSNE(n_components=2).fit_transform(svd_data)
+        svd_data = svd_data.toarray()
+        tsne_data = TSNE(n_components=2, metric='cosine').fit_transform(svd_data)
         self.data = scipy.sparse.csr_matrix(tsne_data)
         self.data = self.data.toarray()
+        # Normalize data to max x and y == 1
+        max_x = 0
+        max_y = 0
+        min_x = 0
+        min_y = 0
+        for row in self.data:
+            x = row[0]
+            y = row[1]
+            if x > max_x:
+                max_x = x
+            if y > max_y:
+                max_y = y
+            if x < min_x:
+                min_x = x
+            if y < min_y:
+                min_y = y
+        print("START")
+        print(self.data)
+        print(max_x, max_y, min_x, min_y)
+        for row in self.data:
+            row[0] = (row[0] - min_x) / (max_x - min_x)
+            row[1] = (row[1] - min_y) / (max_y - min_y)
+        print("NORMALIZED")
+        if(self.func == "msh"):
+            band = estimate_bandwidth(self.data)
+            band = band*(self.bandwith_factor/100)
+            self.cluster_function = MeanShift(bandwidth=band)
 
     def basic_clustering(self):
         cluster_values = self.cluster_function.fit_predict(self.data).tolist()
@@ -390,6 +427,16 @@ class Clusterer:
                 for a in range(0,len(cluster_values)):
                     d.append(0)
                 cluster_distances.append(d)
+        if self.using_dbs:
+            print("USING DBS")
+            ok_clusters = cluster_values.count(1)
+            if ok_clusters == 0:
+                self.eps += 0.002
+                self.cluster_function = DBSCAN(eps=self.eps, min_samples=5)
+                if self.eps > 1:
+                    print("DBS ERROR")
+                    return
+                return self.basic_clustering()
         for index,distance in enumerate(cluster_distances):
             self.papers[index].cluster_distances = distance
         for index,value in enumerate(cluster_values):

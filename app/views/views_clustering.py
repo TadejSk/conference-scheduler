@@ -16,11 +16,16 @@ def setup_clustering(request):
     schedule = ast.literal_eval(schedule_db.schedule_string)
     clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings, func=request.POST.get('method', ""))
     num_cl = request.POST.get('num_clusters', False)
+    print("clusters set to ", num_cl)
     if num_cl != False:
         if num_cl == '':
             clusterer.num_clusters = 10
         else:
             clusterer.num_clusters = int(num_cl)
+    band = request.POST.get('band', False)
+    if band != False and band != '':
+        clusterer.bandwith_factor=int(band)
+        print("BAND SET TO ", band)
     clusterer.set_cluster_function(request.POST.get('method', ""))
     if request.POST.get('useabstracts',False):
         clusterer.using_abstracts = True
