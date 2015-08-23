@@ -166,6 +166,7 @@ class Clusterer:
     bandwith_factor = 0
     func = ""
     eps = 0.02
+    clusters_merged = 0
     using_dbs = False
     paper_graph = []
     papers = []
@@ -209,11 +210,13 @@ class Clusterer:
                 self.vocab.append(word)
 
     def set_cluster_function(self, func):
-        self.func = ""
+        print("num clusters: ", self.num_clusters)
+        self.func = func
         self.using_dbs = False
         if len(self.papers) < self.num_clusters:
             self.num_clusters = len(self.papers)
         if func == 'aff':
+            self.clusters_merged = 0
             self.cluster_function = AffinityPropagation()
             #print("AFF: ",self.cluster_function.preferences)
         if func =='dbs':
@@ -224,7 +227,6 @@ class Clusterer:
         if func == 'kme':
             self.cluster_function = KMeans(n_clusters=self.num_clusters)
         if func == 'msh':
-            self.func = "msh"
             self.cluster_function = MeanShift()
         if func == 'kmm':
             self.cluster_function = MiniBatchKMeans(n_clusters=self.num_clusters)
@@ -404,13 +406,9 @@ class Clusterer:
                 min_x = x
             if y < min_y:
                 min_y = y
-        print("START")
-        print(self.data)
-        print(max_x, max_y, min_x, min_y)
         for row in self.data:
             row[0] = (row[0] - min_x) / (max_x - min_x)
             row[1] = (row[1] - min_y) / (max_y - min_y)
-        print("NORMALIZED")
         if(self.func == "msh"):
             band = estimate_bandwidth(self.data)
             band = band*(self.bandwith_factor/100)
@@ -444,9 +442,8 @@ class Clusterer:
         # Assign basic clusters to papers
         if self.first_clustering == True:
             print("first clustering")
-            print(self.data)
             for index,paper in enumerate(self.papers):
-                print("assigned ", paper.cluster+1, "to paper " ,paper.paper.title)
+                print("assigned ", paper.cluster, "to paper " ,paper.paper.title)
                 paper.paper.simple_cluster = paper.cluster+1
                 paper.paper.simple_visual_x = self.data[index][0]
                 paper.paper.simple_visual_y = self.data[index][1]
@@ -458,9 +455,13 @@ class Clusterer:
         self.get_coords()
         #for i in range(0,len(self.cluster_distances)):
         #    print(self.papers[i].title, "-", self.cluster_distances[i])
+        for index,paper in enumerate(self.papers):
+                print(self.num_clusters, " assigned ", paper.cluster, "to paper " ,paper.paper.title)
 
     def find_papers_with_sum(self, set, subset, desired_sum, curr_index, result):
-        #print("find_papers ", set, subset, desired_sum, curr_index, result)
+        # return after finding 10 combinations
+        if len(result) >= 10:
+            return
         lens = [p.paper.length for p in subset]
         if sum(lens) == desired_sum:
             indexes = []
@@ -550,14 +551,15 @@ class Clusterer:
             if not self.slots[slot_index].is_parallel:
                 # Select biggest cluster
                 cluster_values = [paper.cluster for paper in self.papers]
-                cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.slots))]
+                print("values ", cluster_values)
+                cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.papers))]
                 max_cluster = cluster_sizes.index(max(cluster_sizes))
                 # Get papers from that cluster
                 cluster_papers = [p for p in self.papers if p.cluster == max_cluster]
             else:
                 # If the slot is parallel, then consider previous clusters
                 cluster_values = [paper.cluster for paper in self.papers]
-                cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.slots))]
+                cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.papers))]
                 max_size = 0
                 for index,size in enumerate(cluster_sizes):
                     if index in previous_clusters:
@@ -566,22 +568,65 @@ class Clusterer:
                         max_size = size
                         max_cluster = index
                 cluster_papers = [p for p in self.papers if p.cluster == max_cluster]
+            print("SELECTED ", max_cluster, " with size", len(cluster_papers))
             # If slot is parallel, then the previous clusters must also be considered - simultaneous parallel slots should
             # be filled whith papers from different clusters
             # Select papers that fit into the slot
             papers = []
+            print("finding papers")
             self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
+            print("found papers")
             if papers == []:
                 # This happens when there are no papers, that can completely fill a slot in the largest cluster.
                 # In this case, it makes sense to rerun clustering with less clusters, as that should produce clusters
                 #   with more papers.
                 # If even that doesnt help, then the function should end end report this to the user
-                if self.num_clusters == 1:
+                if self.func=="msh":
+                    cond = (self.bandwith_factor >= 300)
+                if self.func=="hie" or self.func=="kmm" or self.func == "kme":
+                    cond = (self.num_clusters == 0)
+                if self.func=="aff":
+                    print("starting merge")
+                    merged = []
+                    # This one is problematic - manually merge clusters
+                    cond = False
+                    centers = self.cluster_function.cluster_centers_
+                    self.clusters_merged += 1
+                    if self.clusters_merged >= 10:
+                        print("failed to cluster")
+                        return False
+                    for x in range(self.clusters_merged):
+                        # Merge 2 nearest clusters
+                        min_dist = 1000000
+                        cluster1 = 0
+                        cluster2 = 0
+                        for i in range(len(centers)):
+                            coord1 = np.array(centers[i])
+                            if i in merged:
+                                continue
+                            for j in range(i+1,len(centers)):
+                                if j in merged:
+                                    continue
+                                coord2 = np.array(centers[j])
+                                if np.linalg.norm(coord1-coord2) < min_dist:
+                                    cluster1 = i
+                                    cluster2 = j
+                                    min_dist = np.linalg.norm(coord1-coord2)
+                        print("merged ", cluster1, cluster2)
+                        merged.append(cluster1)
+                        # Change paper clusters
+                        for paper in self.papers:
+                            if paper.cluster == cluster1:
+                                paper.cluster = cluster2
+                    return self.fit_to_schedule2()
+                if cond:
+                    print("failed to cluster")
                     return False
                 else:
                     # Needed, since clustering cannot be performed if n_samples < n_clusters
                     self.num_clusters -= 1
-                    self.set_cluster_function(self.cluster_function)
+                    self.bandwith_factor += 10
+                    self.set_cluster_function(self.func)
                     self.create_dataset()
                     self.basic_clustering()
                     print("NO SUITABLE COMBINATION FOUND2")
