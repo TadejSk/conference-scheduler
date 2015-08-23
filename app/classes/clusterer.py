@@ -417,7 +417,7 @@ class Clusterer:
 
     def basic_clustering(self):
         cluster_values = self.cluster_function.fit_predict(self.data).tolist()
-        if self.cluster_function == 'kmm' or self.cluster_function == 'kme':
+        if self.cluster_func == 'kmm' or self.cluster_func == 'kme':
             cluster_distances = self.cluster_function.fit_transform(self.data)
         else:
             cluster_distances = []
