@@ -687,6 +687,7 @@ class Clusterer:
             if not self.slots[slot_index].is_parallel:
                 del self.slots[slot_index]
             else:
+                previous_clusters.append(max_cluster)
                 del self.slots[slot_index].sub_slots[0]
 
             # delete marked slot
