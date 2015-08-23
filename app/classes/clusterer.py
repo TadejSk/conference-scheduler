@@ -185,6 +185,7 @@ class Clusterer:
     cluster_function = ""
     vocab = []
     def __init__(self, papers: list, schedule: list, schedule_settings: list, func):
+        self.slots = []
         self.vocab = []
         self.cluster_function = func
         self.papers = []
@@ -515,8 +516,11 @@ class Clusterer:
         # The following is repeated for every cluster independently
         # Slot lengths are initialized in __init__
         previous_clusters = []  # Used when picking clusters for parallel slots
+        slots_to_delete = []
         while self.slots != []:
             print("slots")
+            for slot in self.slots:
+                print(slot.length, slot.is_parallel, slot.sub_slots)
             do_break = False
             # Get biggest empty slot - only select parallel slots once all non-parallel slots have already been filled
             slot_length = 0
@@ -532,21 +536,21 @@ class Clusterer:
                     if num_nonparallel > 0 and slot.is_parallel == True:
                         continue
                     if slot.is_parallel:
+                        # Ignore empty slots - they will be deleted later
+                        if(len(slot.sub_slots) == 0):
+                            previous_clusters = []
+                            slots_to_delete.append(index)
+                            continue
                         # For parallel slots, pick the first unfilled subslot. If all subslots have been filled,
                         # delete the slot and continue
-                        if len(slot.sub_slots) == 0:
-                            previous_clusters = []
-                            del self.slots[slot_index]
-                            # If the deleted slot was the last one, the loop should end
-                            if self.slots == []:
-                                do_break = True;
-                            continue
                         else:
                             sub_slot = slot.sub_slots[0]
-                    slot_length = slot.length
+                            slot_length = sub_slot.length
+                    else:   # slot is not parallel
+                        slot_length = slot.length
                     slot_index = index
             # If slot is not parallel, select a single cluster
-            if do_break:
+            if slot_length == 0:
                 break
             if not self.slots[slot_index].is_parallel:
                 # Select biggest cluster
@@ -561,13 +565,20 @@ class Clusterer:
                 cluster_values = [paper.cluster for paper in self.papers]
                 cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.papers))]
                 max_size = 0
+                max_cluster = None
                 for index,size in enumerate(cluster_sizes):
                     if index in previous_clusters:
+                        print("PREVIOUS CLUSTER")
                         continue
                     if size > max_size:
                         max_size = size
                         max_cluster = index
+                if max_cluster == None:
+                    max_cluster = cluster_sizes.index(max(cluster_sizes))
+                    # This means that there is not enough clusters to ignore previous clusters, so we don't
+                    pass
                 cluster_papers = [p for p in self.papers if p.cluster == max_cluster]
+            print(cluster_sizes)
             print("SELECTED ", max_cluster, " with size", len(cluster_papers))
             # If slot is parallel, then the previous clusters must also be considered - simultaneous parallel slots should
             # be filled whith papers from different clusters
@@ -576,6 +587,7 @@ class Clusterer:
             print("finding papers")
             self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
             print("found papers")
+            print(papers)
             if papers == []:
                 # This happens when there are no papers, that can completely fill a slot in the largest cluster.
                 # In this case, it makes sense to rerun clustering with less clusters, as that should produce clusters
@@ -676,6 +688,12 @@ class Clusterer:
                 del self.slots[slot_index]
             else:
                 del self.slots[slot_index].sub_slots[0]
+
+            # delete marked slot
+            print("SLOTS TO DELETE: ", slots_to_delete, len(self.slots))
+            if len(slots_to_delete) > 0:
+                del self.slots[slots_to_delete[0]]
+                del slots_to_delete[0]
             # redo clustering
             #self.set_cluster_function(self.cluster_function)
             #self.create_dataset()
