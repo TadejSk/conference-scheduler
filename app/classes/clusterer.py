@@ -184,6 +184,7 @@ class Clusterer:
     using_titles = False
     cluster_function = ""
     vocab = []
+    nd_data = []
     def __init__(self, papers: list, schedule: list, schedule_settings: list, func):
         self.slots = []
         self.vocab = []
@@ -345,7 +346,7 @@ class Clusterer:
         titles = []
         print("VOCAB: ", self.vocab)
         if self.vocab == []:
-            count_vectorizer = CountVectorizer()
+            count_vectorizer = CountVectorizer(stop_words='english')
         else:
             count_vectorizer = CountVectorizer(vocabulary=self.vocab)
         tfid_transformer = TfidfTransformer()
@@ -366,15 +367,16 @@ class Clusterer:
             title_count = count_vectorizer.fit_transform(titles)
             abstract_tfid = tfid_transformer.fit_transform(title_count)
             title_data = abstract_tfid
-            print(title_data)
+            print(title_data.toarray(), len(self.papers))
         if self.using_graph_data == True:
             print("using graph data")
             graph_data = scipy.sparse.csr_matrix(np.matrix(self.graph_dataset))
             print(graph_data)
         self.data = []
         for paper in self.papers:
-            self.data.append([0])
+            self.data.append([1])
         self.data=scipy.sparse.csr_matrix(self.data)
+        print("MAT ", self.data)
         if abstract_data != None:
             self.data = scipy.sparse.hstack([self.data, abstract_data])
         if title_data != None:
@@ -382,16 +384,25 @@ class Clusterer:
         if graph_data != None:
             self.data = scipy.sparse.hstack([self.data, graph_data])
         # Reduce data to two dimensions
-        if self.data.getnnz() < 50:
-            svd_data = self.data
+        print("nd data: ", self.data)
+        self.nd_data = self.data.toarray()
+        print("SHAPE ", self.data.shape[1])
+        if self.data.shape[1] > 50:
             svd_data = TruncatedSVD(n_components=50).fit_transform(self.data)
+            tsne_data = TSNE(n_components=2, metric='cosine').fit_transform(svd_data)
+        elif self.data.shape[1] < 10:
+            print("PCA")
+            svd_data = PCA(n_components=2).fit_transform(self.data.toarray())
+            tsne_data = svd_data
+            if len(tsne_data) == 1:
+                tsne_data = [[1,0]]
         else:
             svd_data = self.data
-        svd_data = svd_data.toarray()
-        tsne_data = TSNE(n_components=2, metric='cosine').fit_transform(svd_data)
+            tsne_data = TSNE(n_components=2, metric='cosine').fit_transform(svd_data)
         self.data = scipy.sparse.csr_matrix(tsne_data)
         self.data = self.data.toarray()
         # Normalize data to max x and y == 1
+        print("before normalization: ", self.data)
         max_x = 0
         max_y = 0
         min_x = 0
@@ -408,17 +419,26 @@ class Clusterer:
             if y < min_y:
                 min_y = y
         for row in self.data:
-            row[0] = (row[0] - min_x) / (max_x - min_x)
-            row[1] = (row[1] - min_y) / (max_y - min_y)
+            if(max_x-min_x != 0):
+                row[0] = (row[0] - min_x) / (max_x - min_x)
+            else:
+                row[0] = 0
+            if(max_y-min_y != 0):
+                row[1] = (row[1] - min_y) / (max_y - min_y)
+            else:
+                row[1] = 0
         if(self.func == "msh"):
             band = estimate_bandwidth(self.data)
             band = band*(self.bandwith_factor/100)
             self.cluster_function = MeanShift(bandwidth=band)
 
     def basic_clustering(self):
-        cluster_values = self.cluster_function.fit_predict(self.data).tolist()
+
+        data = self.data
+        print("2d data: ", data)
+        cluster_values = self.cluster_function.fit_predict(data).tolist()
         if self.func == 'kmm' or self.func == 'kme':
-            cluster_distances = self.cluster_function.fit_transform(self.data)
+            cluster_distances = self.cluster_function.fit_transform(data)
         else:
             cluster_distances = []
             for paper in self.papers:
@@ -550,13 +570,15 @@ class Clusterer:
                         slot_length = slot.length
                     slot_index = index
             # If slot is not parallel, select a single cluster
+
             if slot_length == 0:
                 break
             if not self.slots[slot_index].is_parallel:
                 # Select biggest cluster
                 cluster_values = [paper.cluster for paper in self.papers]
+                max_cluster_index = max(cluster_values)
                 print("values ", cluster_values)
-                cluster_sizes = [cluster_values.count(i) for i in range(0, len(self.papers))]
+                cluster_sizes = [cluster_values.count(i) for i in range(0, max_cluster_index+1)]
                 max_cluster = cluster_sizes.index(max(cluster_sizes))
                 # Get papers from that cluster
                 cluster_papers = [p for p in self.papers if p.cluster == max_cluster]
@@ -604,7 +626,7 @@ class Clusterer:
                     cond = False
                     centers = self.cluster_function.cluster_centers_
                     self.clusters_merged += 1
-                    if self.clusters_merged >= 10:
+                    if self.clusters_merged >= 20:
                         print("failed to cluster")
                         return False
                     for x in range(self.clusters_merged):
@@ -637,6 +659,9 @@ class Clusterer:
                 else:
                     # Needed, since clustering cannot be performed if n_samples < n_clusters
                     self.num_clusters -= 1
+                    if self.num_clusters == 0 and (self.func=="hie" or self.func=="kmm" or self.func == "kme"):
+                        print("failed to cluster")
+                        return False
                     self.bandwith_factor += 10
                     self.set_cluster_function(self.func)
                     self.create_dataset()
