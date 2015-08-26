@@ -4,6 +4,8 @@ from django.shortcuts import redirect, render
 from app.models import Paper, Conference
 from ..classes.clusterer import Clusterer
 from ..classes.schedule_manager import schedule_manager_class
+import time
+import profile
 
 __author__ = 'Tadej'
 
@@ -81,10 +83,18 @@ def basic_clustering(request):
     print(schedule)
     #clusterer = Clusterer(papers=papers, schedule=schedule, schedule_settings=settings)
     #clusterer.add_graph(schedule_db.paper_graph_string)
-    clusterer = setup_clustering(request)
-    clusterer.create_dataset()
-    clusterer.basic_clustering()
-    clusterer.fit_to_schedule2()
+    times = []
+
+    for i in range(1, 2):
+        start_time = time.time()
+        clusterer = setup_clustering(request)
+        clusterer.create_dataset()
+        clusterer.basic_clustering()
+        clusterer.fit_to_schedule2()
+        elapsed_time = time.time() - start_time
+        times.append(elapsed_time)
+        print(i)
+    print("TIME: ", sum(times)/len(times))
     # Add papers to schedule
     schedule = Conference.objects.get(user = request.user, pk=request.session['conf']).schedule_string
     settings = Conference.objects.get(user = request.user, pk=request.session['conf']).settings_string

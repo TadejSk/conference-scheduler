@@ -212,7 +212,7 @@ class Clusterer:
                 self.vocab.append(word)
 
     def set_cluster_function(self, func):
-        print("num clusters: ", self.num_clusters)
+        #print("num clusters: ", self.num_clusters)
         self.func = func
         self.using_dbs = False
         if len(self.papers) < self.num_clusters:
@@ -344,7 +344,7 @@ class Clusterer:
         self.data_list = []
         abstracts = []
         titles = []
-        print("VOCAB: ", self.vocab)
+        #print("VOCAB: ", self.vocab)
         if self.vocab == []:
             count_vectorizer = CountVectorizer(stop_words='english')
         else:
@@ -357,26 +357,26 @@ class Clusterer:
             abstracts.append(paper.paper.abstract)
             titles.append(paper.paper.title)
         if self.using_abstracts == True:
-            print("using abstract data")
+            #print("using abstract data")
             abstract_count = count_vectorizer.fit_transform(abstracts)
             abstract_tfid = tfid_transformer.fit_transform(abstract_count)
             abstract_data = abstract_tfid
-            print(abstract_data)
+            #print(abstract_data)
         if self.using_titles == True:
-            print("using title data")
+            #print("using title data")
             title_count = count_vectorizer.fit_transform(titles)
             abstract_tfid = tfid_transformer.fit_transform(title_count)
             title_data = abstract_tfid
-            print(title_data.toarray(), len(self.papers))
+            #print(title_data.toarray(), len(self.papers))
         if self.using_graph_data == True:
-            print("using graph data")
+            #print("using graph data")
             graph_data = scipy.sparse.csr_matrix(np.matrix(self.graph_dataset))
-            print(graph_data)
+            #print(graph_data)
         self.data = []
         for paper in self.papers:
             self.data.append([1])
         self.data=scipy.sparse.csr_matrix(self.data)
-        print("MAT ", self.data)
+        #print("MAT ", self.data)
         if abstract_data != None:
             self.data = scipy.sparse.hstack([self.data, abstract_data])
         if title_data != None:
@@ -384,14 +384,14 @@ class Clusterer:
         if graph_data != None:
             self.data = scipy.sparse.hstack([self.data, graph_data])
         # Reduce data to two dimensions
-        print("nd data: ", self.data)
+        #print("nd data: ", self.data)
         self.nd_data = self.data.toarray()
-        print("SHAPE ", self.data.shape[1])
+        #print("SHAPE ", self.data.shape[1])
         if self.data.shape[1] > 50:
             svd_data = TruncatedSVD(n_components=50).fit_transform(self.data)
             tsne_data = TSNE(n_components=2, metric='cosine').fit_transform(svd_data)
         elif self.data.shape[1] < 10:
-            print("PCA")
+            #print("PCA")
             svd_data = PCA(n_components=2).fit_transform(self.data.toarray())
             tsne_data = svd_data
             if len(tsne_data) == 1:
@@ -402,7 +402,7 @@ class Clusterer:
         self.data = scipy.sparse.csr_matrix(tsne_data)
         self.data = self.data.toarray()
         # Normalize data to max x and y == 1
-        print("before normalization: ", self.data)
+        #print("before normalization: ", self.data)
         max_x = 0
         max_y = 0
         min_x = 0
@@ -430,12 +430,15 @@ class Clusterer:
         if(self.func == "msh"):
             band = estimate_bandwidth(self.data)
             band = band*(self.bandwith_factor/100)
+            if band == 0:
+                return False
             self.cluster_function = MeanShift(bandwidth=band)
+        return True
 
     def basic_clustering(self):
 
         data = self.data
-        print("2d data: ", data)
+        #print("2d data: ", data)
         cluster_values = self.cluster_function.fit_predict(data).tolist()
         if self.func == 'kmm' or self.func == 'kme':
             cluster_distances = self.cluster_function.fit_transform(data)
@@ -447,7 +450,7 @@ class Clusterer:
                     d.append(0)
                 cluster_distances.append(d)
         if self.using_dbs:
-            print("USING DBS")
+            #print("USING DBS")
             ok_clusters = cluster_values.count(1)
             if ok_clusters == 0:
                 self.eps += 0.002
@@ -462,9 +465,9 @@ class Clusterer:
             self.papers[index].cluster = value
         # Assign basic clusters to papers
         if self.first_clustering == True:
-            print("first clustering")
+            #print("first clustering")
             for index,paper in enumerate(self.papers):
-                print("assigned ", paper.cluster, "to paper " ,paper.paper.title)
+                #print("assigned ", paper.cluster, "to paper " ,paper.paper.title)
                 paper.paper.simple_cluster = paper.cluster+1
                 paper.paper.simple_visual_x = self.data[index][0]
                 paper.paper.simple_visual_y = self.data[index][1]
@@ -477,7 +480,8 @@ class Clusterer:
         #for i in range(0,len(self.cluster_distances)):
         #    print(self.papers[i].title, "-", self.cluster_distances[i])
         for index,paper in enumerate(self.papers):
-                print(self.num_clusters, " assigned ", paper.cluster, "to paper " ,paper.paper.title)
+                pass
+                #print(self.num_clusters, " assigned ", paper.cluster, "to paper " ,paper.paper.title)
 
     def find_papers_with_sum(self, set, subset, desired_sum, curr_index, result):
         # return after finding 10 combinations
@@ -523,7 +527,7 @@ class Clusterer:
             paper.paper.save()
 
     def fit_to_schedule2(self):
-        print("started fitting")
+        #print("started fitting")
         """
         An alternate approach approach:
             1.) Perform clustering with basic_clustering - done manually in the view
@@ -538,9 +542,9 @@ class Clusterer:
         previous_clusters = []  # Used when picking clusters for parallel slots
         slots_to_delete = []
         while self.slots != []:
-            print("slots")
-            for slot in self.slots:
-                print(slot.length, slot.is_parallel, slot.sub_slots)
+            #print("slots")
+            #for slot in self.slots:
+                #print(slot.length, slot.is_parallel, slot.sub_slots)
             do_break = False
             # Get biggest empty slot - only select parallel slots once all non-parallel slots have already been filled
             slot_length = 0
@@ -577,7 +581,7 @@ class Clusterer:
                 # Select biggest cluster
                 cluster_values = [paper.cluster for paper in self.papers]
                 max_cluster_index = max(cluster_values)
-                print("values ", cluster_values)
+                #print("values ", cluster_values)
                 cluster_sizes = [cluster_values.count(i) for i in range(0, max_cluster_index+1)]
                 max_cluster = cluster_sizes.index(max(cluster_sizes))
                 # Get papers from that cluster
@@ -590,7 +594,7 @@ class Clusterer:
                 max_cluster = None
                 for index,size in enumerate(cluster_sizes):
                     if index in previous_clusters:
-                        print("PREVIOUS CLUSTER")
+                        #print("PREVIOUS CLUSTER")
                         continue
                     if size > max_size:
                         max_size = size
@@ -600,16 +604,16 @@ class Clusterer:
                     # This means that there is not enough clusters to ignore previous clusters, so we don't
                     pass
                 cluster_papers = [p for p in self.papers if p.cluster == max_cluster]
-            print(cluster_sizes)
-            print("SELECTED ", max_cluster, " with size", len(cluster_papers))
+            #print(cluster_sizes)
+            #print("SELECTED ", max_cluster, " with size", len(cluster_papers))
             # If slot is parallel, then the previous clusters must also be considered - simultaneous parallel slots should
             # be filled whith papers from different clusters
             # Select papers that fit into the slot
             papers = []
-            print("finding papers")
+            #print("finding papers")
             self.find_papers_with_sum(cluster_papers, [], slot_length, 0, papers)
-            print("found papers")
-            print(papers)
+            #print("found papers")
+            #print(papers)
             if papers == []:
                 # This happens when there are no papers, that can completely fill a slot in the largest cluster.
                 # In this case, it makes sense to rerun clustering with less clusters, as that should produce clusters
@@ -620,7 +624,7 @@ class Clusterer:
                 if self.func=="hie" or self.func=="kmm" or self.func == "kme":
                     cond = (self.num_clusters == 0)
                 if self.func=="aff":
-                    print("starting merge")
+                    #print("starting merge")
                     merged = []
                     # This one is problematic - manually merge clusters
                     cond = False
@@ -646,7 +650,7 @@ class Clusterer:
                                     cluster1 = i
                                     cluster2 = j
                                     min_dist = np.linalg.norm(coord1-coord2)
-                        print("merged ", cluster1, cluster2)
+                        #print("merged ", cluster1, cluster2)
                         merged.append(cluster1)
                         # Change paper clusters
                         for paper in self.papers:
@@ -664,9 +668,11 @@ class Clusterer:
                         return False
                     self.bandwith_factor += 10
                     self.set_cluster_function(self.func)
-                    self.create_dataset()
+                    if not self.create_dataset():
+                        print("failed to cluster")
+                        return False
                     self.basic_clustering()
-                    print("NO SUITABLE COMBINATION FOUND2")
+                    #print("NO SUITABLE COMBINATION FOUND2")
                     return self.fit_to_schedule2()
             else:
                 # if there are multiple fitting groups in the same cluster, select the group with the smallest error
@@ -716,7 +722,7 @@ class Clusterer:
                 del self.slots[slot_index].sub_slots[0]
 
             # delete marked slot
-            print("SLOTS TO DELETE: ", slots_to_delete, len(self.slots))
+            #print("SLOTS TO DELETE: ", slots_to_delete, len(self.slots))
             if len(slots_to_delete) > 0:
                 del self.slots[slots_to_delete[0]]
                 del slots_to_delete[0]
