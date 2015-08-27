@@ -93,6 +93,7 @@ def basic_clustering(request):
         clusterer.fit_to_schedule2()
         elapsed_time = time.time() - start_time
         times.append(elapsed_time)
+        print("T: ", elapsed_time)
         print(i)
     print("TIME: ", sum(times)/len(times))
     # Add papers to schedule

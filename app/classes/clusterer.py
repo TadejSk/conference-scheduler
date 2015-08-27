@@ -428,7 +428,10 @@ class Clusterer:
             else:
                 row[1] = 0
         if(self.func == "msh"):
-            band = estimate_bandwidth(self.data)
+            try:
+                band = estimate_bandwidth(self.data)
+            except ValueError:
+                return False
             band = band*(self.bandwith_factor/100)
             if band == 0:
                 return False
