@@ -1,7 +1,7 @@
 import ast
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from app.models import Conference
+from app.models import Conference, Paper
 
 __author__ = 'Tadej'
 
@@ -100,5 +100,34 @@ def export_schedule(request):
                     hour += 1
             day_times.append(row_times)
         times.append(day_times)
-    print(times)
-    return render(request, 'app/export_schedule.html', {'schedule':schedule, 'max_slots':max_slots, 'times':times})
+    # Saves titles
+    names = ast.literal_eval(conf.names_string)
+    print(names)
+    names_list = []
+    for day in names:
+        day_list = []
+        for row in day:
+            row_names=[]
+            for name in row:
+                row_names.append(name)
+            day_list.append(row_names)
+        names_list.append(day_list)
+    # Save paper titles
+    ids = ast.literal_eval(conf.schedule_string)
+    papers = []
+    for day in ids:
+        day_list = []
+        for row in day:
+            row_list = []
+            for col in row:
+                col_papers = []
+                for paper_id in col:
+                    col_papers.append(Paper.objects.get(pk=paper_id).title)
+                row_list.append(col_papers)
+            day_list.append(row_list)
+        papers.append(day_list)
+    print("----------")
+    print(papers)
+    print(names_list)
+    return render(request, 'app/export_schedule.html', {'schedule':schedule, 'max_slots':max_slots, 'times':times,
+                                                        'names':names, 'paper_names': papers, 'paper_slots':names_list})

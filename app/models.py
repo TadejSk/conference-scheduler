@@ -32,6 +32,7 @@ class Conference(models.Model):
     title = models.CharField(max_length=1000, default="Unnamed conference")
     settings_string = models.CharField(max_length=100000, default='[[]]')
     schedule_string = models.CharField(max_length=100000, default='[[]]')
+    names_string = models.CharField(max_length=100000, default='[[]]')
     slot_length = models.IntegerField(default=60)
     num_days = models.IntegerField(default=1)
     paper_graph_string = models.TextField(max_length=100000000, default = '[]')
