@@ -59,10 +59,11 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'diploma.urls'
 
+TEMP_DIR = os.path.join(BASE_DIR, 'templates')
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['c:/3l/diploma/templates'],
+        'DIRS': [TEMP_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -109,7 +110,7 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR,  'templates'),
 )
 STATICFILES_DIRS = (
-  'c:/3l/diploma/static/',
+  os.path.join(BASE_DIR, 'static'),
 )
 
 # Login url
