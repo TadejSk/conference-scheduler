@@ -65,10 +65,10 @@
                                         <div class="col-md-{{ row|allign_schedule }}">
                                             <div class="well">
                                                 <div class="row">
-                                                    <div class="col-xs-6">
+                                                    <div class="col-xs-3">
                                                         Slot {{ forloop.parentloop.counter }}<br/>
                                                     </div>
-                                                    <div class="col-xs-6">
+                                                    <div class="col-xs-9">
                                                         <p class="text-right">
                                                             {# Form for deleting a slot #}
                                                             <form class="form-inline"
@@ -78,7 +78,7 @@
                                                                        value="{{ forloop.parentloop.counter0 }}"/>
                                                                 <input class="hidden" , id="col" , name="col" ,
                                                                        value="{{ forloop.counter0 }}"/>
-                                                                <input class="hidden" , value={{ day }} id="day",
+                                                                <input class="hidden" , value="{{ day }}" id="day",
                                                                        name="day"/>
                                                                 <button type="submit" class="btn btn-xs btn-danger">
                                                                     Delete
@@ -87,6 +87,7 @@
                                                         </p>
                                                     </div>
                                                 </div>
+                                                <br/>
                                                 <form class="form-inline"
                                                       action="{% url 'app:schedule_change_slot_length' %}"
                                                       method="post">
@@ -101,9 +102,28 @@
                                                     <div class="input-group input-group-sm">
                                                         <input type="text" id="len" name="len" class="form-control"
                                                                placeholder="" value="{{ col }}">
-                                            <span class="input-group-btn">
-                                                <button type="submit" class="btn btn-primary">Change</button>
-                                            </span>
+                                                        <span class="input-group-btn">
+                                                            <button type="submit" class="btn btn-primary">Change</button>
+                                                        </span>
+                                                    </div>
+                                                </form>
+                                                {# Form for renaming a slot #}
+                                                <form class="form-inline"
+                                                      action="{% url 'app:rename_slot' %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input class="hidden" , id="row" , name="row" ,
+                                                           value="{{ forloop.parentloop.counter0 }}"/>
+                                                    <input class="hidden" , id="col" , name="col" ,
+                                                           value="{{ forloop.counter0 }}"/>
+                                                    <input class="hidden" , value="{{ day }}" id="day",
+                                                           name="day"/>
+                                                    <div><label for="len">Name:</label></div>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="text" id="name" name="name" class="form-control"
+                                                               placeholder="" value="{{ names|get_element_at:day|get_element_at:forloop.parentloop.counter0|get_element_at:forloop.counter0 }}">
+                                                        <span class="input-group-btn">
+                                                            <button type="submit" class="btn btn-success">Rename</button>
+                                                        </span>
                                                     </div>
                                                 </form>
                                             </div>

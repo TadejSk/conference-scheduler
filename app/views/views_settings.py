@@ -6,6 +6,7 @@ from ..classes import schedule_settings_class, schedule_manager_class
 import ast
 __author__ = 'Tadej'
 
+@login_required
 def schedule_settings(request):
     error = request.session['parallel_error']
     time_error = request.session.get('time_error', "")
@@ -20,10 +21,12 @@ def schedule_settings(request):
         raise Http404('The selected day is too high')
     settings_list = ast.literal_eval(settings.settings_string)[int(request.GET.get('day',0))]
     start_time = ast.literal_eval(settings.start_times)[int(request.GET.get('day',0))]
+    names = ast.literal_eval(settings.names_string)
     return render(request, 'app/settings/schedule.html', {'num_days':num_days, 'base_time':base_time, 'day':day,
                                                           'settings_list':settings_list, 'error':error, 'start_time':start_time,
-                                                          'time_error':time_error})
+                                                          'time_error':time_error, 'names':names})
 
+@login_required
 def save_simple_schedule_settings(request):
     num_days = request.POST.get('num_days',None)
     base_time = request.POST.get('base_time',None)
@@ -57,6 +60,7 @@ def save_simple_schedule_settings(request):
         settings.save()
     return redirect('/app/settings/schedule/')
 
+@login_required
 def change_start_time(request):
     request.session['time_error'] = ""
     day = int(request.POST.get('day', None))
@@ -84,6 +88,7 @@ def change_start_time(request):
     conf.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
+@login_required
 def schedule_add_slot(request):
     settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])
     schedule = schedule_manager_class()
@@ -97,9 +102,14 @@ def schedule_add_slot(request):
     settings_model.settings_string = str(settings)
     schedule.add_slot_to_day(int(request.POST.get('day')))
     settings_model.schedule_string = schedule.papers
+    # Add name
+    names = ast.literal_eval(settings_model.names_string)
+    names[int(request.POST.get('day'))].append(['Slot'])
+    settings_model.names_string = str(names)
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
+@login_required
 def schedule_add_parallel_slots(request):
     request.session['parallel_error']=""
     if not request.POST.get('num_slots').isdigit():
@@ -119,9 +129,17 @@ def schedule_add_parallel_slots(request):
         schedule.import_paper_schedule(settings_model.schedule_string)
     schedule.add_parallel_slots_to_day(int(request.POST.get('day')),int(request.POST.get('num_slots')))
     settings_model.schedule_string = schedule.papers
+    # Add names
+    names_to_add = []
+    for i in range(0,int(request.POST.get('num_slots'))):
+        names_to_add.append('Slot')
+    names = ast.literal_eval(settings_model.names_string)
+    names[int(request.POST.get('day'))].append(names_to_add)
+    settings_model.names_string = str(names)
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
+@login_required
 def schedule_change_slot_time(request):
     settings_model = Conference.objects.get(user=request.user, pk=request.session['conf'])
     settings = schedule_settings_class(settings_model.settings_string, settings_model.num_days)
@@ -131,6 +149,7 @@ def schedule_change_slot_time(request):
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
+@login_required
 def delete_slot(request):
     day = int(request.POST.get('day'))
     row = int(request.POST.get('row'))
@@ -143,6 +162,15 @@ def delete_slot(request):
     schedule.delete_slot(day,row,col)
     settings_model.settings_string = str(settings)
     settings_model.schedule_string = str(schedule)
+    names = ast.literal_eval(settings_model.names_string)
+    # Delete name
+    names[day][row][col] = None
+    names[day][row] = [ x for x in names[day][row] if x != None]
+    # If a parallel group of slots contains no more slots, the group should also be deleted
+    if names[day][row] == []:
+        names[day][row] = None
+        names[day] = [ x for x in names[day] if x != None]
+    settings_model.names_string = str(names)
     settings_model.save()
     return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
 
@@ -186,9 +214,23 @@ def move_slot_down(request):
     conf.save()
     return redirect('/app/index/')
 
-
+@login_required
 def swap_slots(slot1_index, slot2_index, list):
     temp_slot = list[slot2_index]
     list[slot2_index] = list[slot1_index]
     list[slot1_index] = temp_slot
     return list
+
+@login_required
+def rename_slot(request):
+    day = int(request.POST.get('day'))
+    col = int(request.POST.get('col'))
+    row = int(request.POST.get('row'))
+    conf = Conference.objects.get(user=request.user, pk=request.session['conf'])
+    names = ast.literal_eval(conf.names_string)
+    names[day][row][col] = request.POST.get('name')
+    conf.names_string = str(names)
+    conf.save()
+    return redirect('/app/settings/schedule/?day='+request.POST.get('day'))
+
+
