@@ -15,7 +15,9 @@ Navodila za namestitev:
 	V direktoriju, v katerem se nahaja izvorna koda poženite ukaz "virtualenv ENV".
 	Virtualno okolje zaženite z ukazom:
 		source  bin/activate (na sistemih POSIX)
+
 	Nato je potrebno namestiti knjižnice, ki jih aplikacija potrebuje delovanje.
+        Potrebne knjižnice so navedene v datoteki requirements.txt
 		Večino knjižnic se lahko preprosto namesti z ukazom "pip install -r requirements.txt"
 	Za scipy je potrebno malo več, navodila so na http://www.scipy.org/install.html
 
@@ -23,7 +25,8 @@ Navodila za namestitev:
 	Za ustrezno delovanje aplikacije je najprej potrebno ustvariti podatkovno bazo PostgreSQL
 	Navodila za to so na straneh http://www.postgresql.org/docs/manuals/, specifično za ubuntu
 		pa na https://help.ubuntu.com/community/PostgreSQL. Na sistemu Windows je to najlažje 
-        storiti s pomočjo vmesnika pgadmin3,
+        storiti s pomočjo vmesnika pgadmin3. Podrobnejši napotki za namestitev na sistemu Windows
+        so na https://wiki.postgresql.org/wiki/Running_%26_Installing_PostgreSQL_On_Native_Windows.
 
 5.) Konfiguracija nastavitev
     V datoteki diploma/settings_secret.py je potrebno spremeniti nastavitve za podatkovno bazo
