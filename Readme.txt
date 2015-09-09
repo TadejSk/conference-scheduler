@@ -1,5 +1,9 @@
 Navodila za namestitev:
 
+Namestitev je na žalost precej zapletena, saj je potrebno pravilno naložiti vse potrebne knjižnice in
+podatkovno bazo. Sledeče korake sem preveril na operacijskem sistemu Ubuntu 12.04, čeprav aplikacija
+lahko teče tudi na drugih operacijskih sistemih.
+
 1.) Potrebni programi
 	Za namestitev aplikacije je najprej potrebno namestiti sledeča programska okolja:
 		-Python 3.4 ali novejši (https://www.python.org/downloads/)
