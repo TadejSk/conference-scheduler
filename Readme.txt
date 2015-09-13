@@ -36,7 +36,8 @@ lahko teče tudi na drugih operacijskih sistemih.
 
 5.) Konfiguracija nastavitev
     V datoteki diploma/settings_secret.py je potrebno spremeniti nastavitve za podatkovno bazo
-    (NAME, USER, PASSWORD, PORT in HOST)
+    (NAME, USER, PASSWORD, PORT in HOST). Za zagotovitev varnosti je pred deployanjem aplikacije
+    na splet potrebno spremenit še secret key (https://docs.djangoproject.com/en/1.8/ref/settings/#std:setting-SECRET_KEY)
 
 6.) Migracije
     Za končno namestitev podatkovne baze je potrebno pognati ukaz python manage.py migrate
