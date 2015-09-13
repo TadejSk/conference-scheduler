@@ -13,14 +13,14 @@ lahko teče tudi na drugih operacijskih sistemih.
 			Potrebno je namestiti namestiti vse razvijalske knjižnice PostgreSQL (postgres in postgres-client)
 			
 2.) Namestitev izvorne kode
-	Izvorno kodo namestite v poljuben direktorij (lahko z ukazom git clone, ali pa samo s kopiranjem).
+	Izvorno kodo namestite v poljuben direktorij (lahko preko githuba, ali pa samo s kopiranjem iz dropboxa).
 	
 3.) Nastavitev virtualnega okolja
 	V direktoriju, v katerem se nahaja izvorna koda poženite ukaz "virtualenv ENV".
 	Virtualno okolje zaženite z ukazom:
 		source  bin/activate (na sistemih POSIX)
-    Uporaba virtualnega okolja ni nujno potrebna, vendar je lahko koristno, saj ustvari
-        novo okolje jezika python, brez predhosno namečšenih knjižnic  
+    Uporaba virtualnega okolja ni nujno potrebna, vendar je lahko koristna, saj ustvari
+        novo okolje jezika python, brez predhodno namečšenih knjižnic  
 
 	Nato je potrebno namestiti knjižnice, ki jih aplikacija potrebuje delovanje.
     Potrebne knjižnice so navedene v datoteki requirements.txt
