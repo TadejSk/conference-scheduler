@@ -214,7 +214,6 @@ def move_slot_down(request):
     conf.save()
     return redirect('/app/index/')
 
-@login_required
 def swap_slots(slot1_index, slot2_index, list):
     temp_slot = list[slot2_index]
     list[slot2_index] = list[slot1_index]

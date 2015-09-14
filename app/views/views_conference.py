@@ -39,6 +39,9 @@ def copy_conference(request):
     # Copy conference structure
     settings_str = copied_conference.settings_string
     new_conference.settings_string = settings_str
+    # Copy names
+    names_str = copied_conference.names_string
+    new_conference.names_string = names_str
     # Create new empty list of papers
     settings_list = ast.literal_eval(settings_str)
     new_list = []
